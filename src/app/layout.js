@@ -1,5 +1,6 @@
 import "./globals.css";
 import Header from "../components/Header";
+import SessionProviderWrapper from "../components/SessionProviderWrapper";
 
 export const metadata = {
   title: "Unbound",
@@ -10,8 +11,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="antialiased overflow-hidden">
+        <SessionProviderWrapper>
         <Header />
         {children}
+        </SessionProviderWrapper>
       </body>
     </html>
   );

@@ -1,15 +1,18 @@
 "use client";
+
 import { motion } from "motion/react"
 import { AnimatePresence } from "motion/react"
-
 import { useState, useEffect } from "react";
 import { IoMdArrowRoundUp, IoMdArrowRoundDown } from "react-icons/io";
 import MainView from "../../components/MainView";
+import { useSession } from "next-auth/react";
+import SignIn from "../../components/sign-in";
 
 export default function Feed() {
+    const { data: session, status } = useSession();
+    const [showSignIn, setShowSignIn] = useState(false);
     const [posts, setPosts] = useState([]);
     const [sort, setSort] = useState("newest");
-    // const [filter, setFilter] = useState("newest");
     const [currentIndex, setCurrentIndex] = useState(0);
     const [votes, setVotes] = useState({}); // tracks votes for each post by ID
     
@@ -35,6 +38,7 @@ export default function Feed() {
         score: 30,
       },
     ];
+  
 
     //use effect because fetch or GET is a sideeffect
     useEffect(() => {
@@ -78,45 +82,75 @@ export default function Feed() {
       }
     }, [currentIndex, posts.length]);
 
+    const handleInteraction = (action) => {
+      if (!session) {
+        setShowSignIn(true); // Show the sign-in button if not authenticated
+        return;
+      }
+      action(); // Perform the action if authenticated
+    };
 
-
-    //fetch posts using API
-
-    // const handleUpvote = () => {}
-    
-    // const handleDownVote = () => {}
+    const handleUpvote = (postId) => {
+      setVotes((prevVotes) => ({
+        ...prevVotes,
+        [postId]: (prevVotes[postId] || 0) + 1,
+      }));
+    };
+  
+    const handleDownvote = (postId) => {
+      setVotes((prevVotes) => ({
+        ...prevVotes,
+        [postId]: (prevVotes[postId] || 0) - 1,
+      }));
+    };
 
     //toggle sort to toggle between the state variable
     const toggleSort = () => {
       setSort((prevSort) => (prevSort === "newest" ? "highest" : "newest"));
     };
 
+      // Prevent rendering until session status is determined
+    if (status === "loading") {
+    return <div>Loading...</div>; // Show a loading state while session is being determined
+    }
+
     // username, content filtered by newest/highestScore
     //upvote and downvote
     return (
         <div className="flex items-center justify-center min-h-screen -mt-4">
-        {/* Feed Container */}
-        <AnimatePresence mode="wait">
+<MainView>
+      <AnimatePresence mode="wait">
+        {showSignIn ? (
+          <motion.div
+            key="signin"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full h-full flex items-center justify-center"
+          >
+            <SignIn
+              onSignInSuccess={() => setShowSignIn(false)} // Callback to hide SignIn
+            />
+          </motion.div>
+        ) : (
           <motion.div
             key={`${currentIndex}-${sort}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
-            className="w-full h-full flex items-center justify-center"
-            >
-        <MainView>
-          {/* Post Content */}
-          <div className="flex-grow flex items-center justify-center">
-            {/* <h1 className="text-lg font-bold">
-              {posts[currentIndex]?.user?.username || "Unkown User"}
-            </h1>
-            <br></br> */}
-            <h2 className="text-xl text-center">{posts[currentIndex]?.content}</h2>
-          </div>
+            className="w-full h-full flex flex-col items-center justify-center"
+          >
+            {/* Post Content */}
+            <div className="flex-grow flex items-center justify-center">
+              <h2 className="text-xl text-center">
+                {posts[currentIndex]?.content || "No posts available"}
+              </h2>
+            </div>
 
-       {/* Voting Buttons */}
-       <div className="flex justify-between items-center w-full px-8 m-4">
+            {/* Voting Buttons */}
+            <div className="flex justify-between items-center w-full px-8 m-4">
               {/* Left Section: Toggle Button */}
               <div className="flex-shrink-0">
                 <button
@@ -130,6 +164,11 @@ export default function Feed() {
               {/* Center Section: Voting Buttons */}
               <div className="flex gap-4">
                 <button
+                  onClick={() =>
+                    handleInteraction(() =>
+                      handleUpvote(mockPosts[currentIndex]?.id)
+                    )
+                  }
                   className={`px-4 py-2 rounded-lg cursor-pointer ${
                     votes[mockPosts[currentIndex]?.id] === 1
                       ? "bg-[#A5A1A1]"
@@ -139,6 +178,11 @@ export default function Feed() {
                   <IoMdArrowRoundUp size={18} />
                 </button>
                 <button
+                  onClick={() =>
+                    handleInteraction(() =>
+                      handleDownvote(mockPosts[currentIndex]?.id)
+                    )
+                  }
                   className={`px-4 py-2 rounded-lg cursor-pointer ${
                     votes[mockPosts[currentIndex]?.id] === -1
                       ? "bg-[#A5A1A1]"
@@ -158,9 +202,10 @@ export default function Feed() {
                 </button>
               </div>
             </div>
-        </MainView>
-      </motion.div>
-    </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </MainView>
     </div>
     );
 }
