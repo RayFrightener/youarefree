@@ -1,10 +1,12 @@
 "use client" 
 
 import { usePathname } from "next/navigation";
+import { useModal } from "../context/ModalContext";
 
 //Header component
 export default function Header() {
     const pathname = usePathname();
+    const { setShowMore } = useModal();
 
     if (pathname === "/") return null;
 
@@ -20,12 +22,12 @@ export default function Header() {
           </a>
           {/** Right: button */}
           {/* Right: More element */}
-          <a
-            href="/settings"
+          <button 
+            onClick={() => setShowMore(true)}
             className="px-3 py-1 bg-[#DCD9D9] text-[#9C9191] rounded hover:bg-[#C7BEBE] transition"
-          >
-            More
-          </a>
+            >
+              More
+            </button>
         </nav>
       </header>
     );

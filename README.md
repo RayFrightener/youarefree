@@ -7,7 +7,7 @@ Come, Wake up and leave all ready to live life freely.
 
 # Core User Experience
 
-A platform for pure uplifting thoughts/idea. Share but more importantly read yourself to stay in a state of remembrance of Truth because it always starts with getting lost in the sauce and forgetting.=
+A platform for pure uplifting thoughts/idea. Share but more importantly read yourself to stay in a state of remembrance of Truth because it always starts with getting lost in the sauce and forgetting.
 
 # Guiding Principles:
 

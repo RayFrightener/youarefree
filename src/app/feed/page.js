@@ -7,6 +7,9 @@ import { IoMdArrowRoundUp, IoMdArrowRoundDown } from "react-icons/io";
 import MainView from "../../components/MainView";
 import { useSession } from "next-auth/react";
 import SignIn from "../../components/sign-in";
+import { signOut } from "next-auth/react";
+import { useModal } from "../../context/ModalContext";
+
 
 export default function Feed() {
     const { data: session, status } = useSession();
@@ -15,7 +18,8 @@ export default function Feed() {
     const [sort, setSort] = useState("newest");
     const [currentIndex, setCurrentIndex] = useState(0);
     const [votes, setVotes] = useState({}); // tracks votes for each post by ID
-    
+    const { showMore, setShowMore } = useModal();
+
     const mockPosts = [
       {
         id: 1,
@@ -113,11 +117,17 @@ export default function Feed() {
     if (status === "loading") {
     return <div>Loading...</div>; // Show a loading state while session is being determined
     }
+    
+    const handleSignOut = async () => {
+      await signOut({ callbackUrl: "/feed" });
+      setShowMore(false);
+    }
 
     // username, content filtered by newest/highestScore
     //upvote and downvote
     return (
         <div className="flex items-center justify-center min-h-screen -mt-4">
+      {/* <Header onMore={() => setShowMore(true)} /> <-- This is key */}
 <MainView>
       <AnimatePresence mode="wait">
         {showSignIn ? (
@@ -133,7 +143,37 @@ export default function Feed() {
               onSignInSuccess={() => setShowSignIn(false)} // Callback to hide SignIn
             />
           </motion.div>
-        ) : (
+        ) : showMore ? (
+              <motion.div
+                key="more"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className="w-full h-full flex items-center justify-center"
+              >
+                {!session ? (
+                  // If not signed in, show sign in modal
+                  <SignIn onSignInSuccess={() => setShowMore(false)} />
+                ) : (
+                  // If signed in, show sign out button
+                  <div className="flex flex-col items-center justify-center w-full">
+                    <button
+                      onClick={handleSignOut}
+                      className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4"
+                    >
+                      Sign Out
+                    </button>
+                    <button
+                      onClick={() => setShowMore(false)}
+                      className="mt-2 text-sm text-[#9C9191] underline"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            ) : (
           <motion.div
             key={`${currentIndex}-${sort}`}
             initial={{ opacity: 0 }}
@@ -148,55 +188,52 @@ export default function Feed() {
                 {posts[currentIndex]?.content || "No posts available"}
               </h2>
             </div>
-
-            {/* Voting Buttons */}
-            <div className="flex justify-between items-center w-full px-8 m-4">
-              {/* Left Section: Toggle Button */}
-              <div className="flex-shrink-0">
+            {/* Buttons */}
+            <div className="w-full px-2 sm:px-8 m-4">
+              <div className="max-w-md mx-auto flex flex-row gap-4 w-full">
+                {/* Toggle Sort Button */}
                 <button
                   onClick={toggleSort}
-                  className="px-4 py-2 rounded-lg bg-[#BEBABA] cursor-pointer"
+                  className="flex-1 px-4 py-1 rounded-lg bg-[#BEBABA] text-center cursor-pointer"
                 >
-                  {sort === "newest" ? "Most Uplifting" : "Newest"}
+                  {sort === "newest" ? "Uplifting" : "Newest"}
                 </button>
-              </div>
-
-              {/* Center Section: Voting Buttons */}
-              <div className="flex gap-4">
+            
+                {/* Upvote Button */}
                 <button
                   onClick={() =>
                     handleInteraction(() =>
                       handleUpvote(mockPosts[currentIndex]?.id)
                     )
                   }
-                  className={`px-4 py-2 rounded-lg cursor-pointer ${
+                  className={`flex-1 px-4 py-1 rounded-lg cursor-pointer text-center ${
                     votes[mockPosts[currentIndex]?.id] === 1
                       ? "bg-[#A5A1A1]"
                       : "bg-[#BEBABA]"
                   }`}
                 >
-                  <IoMdArrowRoundUp size={18} />
+                  <IoMdArrowRoundUp size={18} className="mx-auto" />
                 </button>
+            
+                {/* Downvote Button */}
                 <button
                   onClick={() =>
                     handleInteraction(() =>
                       handleDownvote(mockPosts[currentIndex]?.id)
                     )
                   }
-                  className={`px-4 py-2 rounded-lg cursor-pointer ${
+                  className={`flex-1 px-4 py-1 rounded-lg cursor-pointer text-center ${
                     votes[mockPosts[currentIndex]?.id] === -1
                       ? "bg-[#A5A1A1]"
                       : "bg-[#BEBABA]"
                   }`}
                 >
-                  <IoMdArrowRoundDown size={18} />
+                  <IoMdArrowRoundDown size={18} className="mx-auto" />
                 </button>
-              </div>
-
-              {/* Right Section: Express Button */}
-              <div className="flex-shrink-0">
+            
+                {/* Express Button */}
                 <button
-                  className="px-4 py-2 rounded-lg bg-[#BEBABA] cursor-pointer"
+                  className="flex-1 px-4 py-1 rounded-lg bg-[#BEBABA] text-center cursor-pointer"
                 >
                   Express
                 </button>
