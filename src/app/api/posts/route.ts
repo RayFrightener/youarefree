@@ -1,33 +1,28 @@
+/**
+ * import next response
+ * import service
+ * export async function GET
+ * destructure the request URL into searchParams
+ * create a const of the searchPrams
+ * try
+ *  call service with argument into a const
+ * "return" the const back to frontend by using nextresponse.json
+ * catch
+ * if error "error fetching posts: " , error
+ * return next response with error always convert to json as that is the standard of sending data over internet
+ */
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { Post } from "@prisma/client";
+import { getPosts } from "@/services/postService";
 
-//fetch posts for feed for "newest" and "highestscore"
-// Get request from frontend with request object 
-export async function GET(request: Request): Promise<NextResponse> {
-    //destructure searchParams from request.url
-    const { searchParams } = new URL(request.url);
-    //assign value of sort searchParam 
-    const sort = searchParams.get("sort") || "newest"; //default to newest
-
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url)
+    const sort = searchParams.get("sort") || "newest";
     try {
-        //fetch posts from db using the searchParam
-        const posts: Post[] = await prisma.post.findMany({
-            orderBy: sort === "highest" ? { score: "desc" } : { createdAt: "desc" },
-            include: {
-                user: {
-                    select: {
-                        username: true,
-                        name: true,
-                    },
-                },
-            },
-        });
-
-        //return send fetched data as JSON response
+        const posts = await getPosts(sort);
         return NextResponse.json(posts);
-    } catch (error) {
-        console.error("Error fetching posts:", error);
-        return NextResponse.json({ error: "Failed to fetch posts" }, { status: 500 });
+    }
+    catch (error) {
+        console.error("Error fetching posts: ", error);
+        return NextResponse.json({error: "failed to fetch posts" }, { status: 500 });
     }
 }

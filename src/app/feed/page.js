@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react";
 import SignIn from "../../components/sign-in";
 import { signOut } from "next-auth/react";
 import { useModal } from "../../context/ModalContext";
+import ExpressForm from "../../components/ExpressForm";
 
 
 export default function Feed() {
@@ -19,6 +20,8 @@ export default function Feed() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [votes, setVotes] = useState({}); // tracks votes for each post by ID
     const { showMore, setShowMore } = useModal();
+    // express form state
+    const [isExpressing, setIsExpressing] = useState(false);
 
     const mockPosts = [
       {
@@ -85,6 +88,34 @@ export default function Feed() {
         window.removeEventListener("keydown", handleKeyDown);
       }
     }, [currentIndex, posts.length]);
+
+    /** function to handle expression submission
+     * create a const handleExpressSubmit async with expression as its variable
+     * in that we do a try catch block
+     * try 
+     * const res(that we receive) from the api route -> fetch with api route
+     * fetch takes in info of the HTTP method in our case: 
+     * method post
+     * header
+     */
+
+    const handleExpressionSubmission = async (expression) => {
+      try {
+        const res = await fetch("/api/posts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: expression }),
+        });
+        if (res.ok) {
+          setIsExpressing(false);
+        } else {
+          alert("Failed to submit post");
+        }
+      } catch (error) {
+        console.error("Error submitting post:", error);
+        alert("Error submitting post");
+      }
+    };
 
     const handleInteraction = (action) => {
       if (!session) {
@@ -173,6 +204,11 @@ export default function Feed() {
                   </div>
                 )}
               </motion.div>
+            ) : isExpressing ? (
+              <ExpressForm
+                onBack={() => setIsExpressing(false)}
+                onSubmit={handleExpressionSubmission}
+                />
             ) : (
           <motion.div
             key={`${currentIndex}-${sort}`}
@@ -234,6 +270,8 @@ export default function Feed() {
                 {/* Express Button */}
                 <button
                   className="flex-1 px-4 py-1 rounded-lg bg-[#BEBABA] text-center cursor-pointer"
+                  onClick={() => handleInteraction(() => 
+                    setIsExpressing(true))}
                 >
                   Express
                 </button>
