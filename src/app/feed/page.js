@@ -46,10 +46,6 @@ export default function Feed() {
       },
     ];
   
-
-    //use effect because fetch or GET is a sideeffect
-    useEffect(() => {
-      //declare async function
       async function fetchPosts() {
 
         try {
@@ -64,7 +60,11 @@ export default function Feed() {
           //catch error if fetch fails
           console.error("Error fetching posts", error);
         }
-      }      
+      }     
+
+    //use effect because fetch or GET is a sideeffect
+    useEffect(() => {
+      //declare async function
       //run the function
       fetchPosts();
     }, [sort]);
@@ -108,6 +108,7 @@ export default function Feed() {
         });
         if (res.ok) {
           setIsExpressing(false);
+          fetchPosts();
         } else {
           alert("Failed to submit post");
         }

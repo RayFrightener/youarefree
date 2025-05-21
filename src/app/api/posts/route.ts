@@ -12,7 +12,9 @@
  * return next response with error always convert to json as that is the standard of sending data over internet
  */
 import { NextResponse } from "next/server";
-import { getPosts } from "@/services/postService";
+import { auth } from "@/auth";
+import { getPosts, createPost } from "@/services/postService";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
@@ -26,3 +28,41 @@ export async function GET(request: Request) {
         return NextResponse.json({error: "failed to fetch posts" }, { status: 500 });
     }
 }
+
+/**export async function POST, arg request: Request
+ * try {
+ *  get session}
+ */
+//receive a post request with content in it
+export async function POST (request: Request) {
+    
+    try {
+        //retrieve session to get user's email
+        const session = await auth();
+        if (!session || !session.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });        
+        }
+        //put request into body
+        const body = await request.json();
+        //destructure content from body
+        const { content } = body;
+        
+        //retrive user id to associate the post with 
+        const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true }
+        });
+    
+        if (!user) {
+            return NextResponse.json({ error: "User not found " }, { status: 404 });
+        }
+        
+        //call service to post into databse
+        const post = await createPost(content, user.id);
+        return NextResponse.json(post, { status: 201 });
+    }   catch (error) {
+            console.error("Error creating post: ", error);
+            return NextResponse.json({ error: "Failed to create a post"}, { status: 500 });
+        }
+}
+

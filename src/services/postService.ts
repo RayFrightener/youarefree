@@ -28,3 +28,27 @@ export async function getPosts(sort: string) {
         },
     });
 }
+
+/** POST service
+ * export async function(content: string, userId: string)
+ * return prisma.post.create(
+ * data: content, userId
+ * include: user -> -> select -> username: true, name: true)
+ */
+
+export async function createPost(content: string, userId: string) {
+    return prisma.post.create({
+        data: {
+            content,
+            userId
+        }, 
+        include: {
+            user: {
+                select: {
+                    username: true,
+                    name: true,
+                },
+            },
+        },
+    });
+}

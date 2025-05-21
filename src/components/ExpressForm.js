@@ -53,6 +53,7 @@ export default function ExpressForm({ onBack, onSubmit }) {
             return () => clearTimeout(timer);
         }
     }, [error]);
+    
     const handleSubmit = () => {
         const trimmed = expression.trim();
         if (trimmed.length === 0) {
