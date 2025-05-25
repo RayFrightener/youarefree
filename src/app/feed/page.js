@@ -20,31 +20,10 @@ export default function Feed() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [votes, setVotes] = useState({}); // tracks votes for each post by ID
     const { showMore, setShowMore } = useModal();
+    const [voteCooldown, setVoteCooldown] = useState({});
     // express form state
     const [isExpressing, setIsExpressing] = useState(false);
 
-    const mockPosts = [
-      {
-        id: 1,
-        content: "This is the first post. Welcome to the feed!",
-        score: 10,
-      },
-      {
-        id: 2,
-        content: "Freedom is your nature. You are free and unbound.",
-        score: 25,
-      },
-      {
-        id: 3,
-        content: "Break free from the illusion of what you are not.",
-        score: 15,
-      },
-      {
-        id: 4,
-        content: "Wake up to your real nature and live fearlessly.",
-        score: 30,
-      },
-    ];
   
       async function fetchPosts() {
 
@@ -55,6 +34,13 @@ export default function Feed() {
           const data = await res.json();
           //assign data to state variable
           setPosts(data);
+
+          //build votes state from fetched posts
+          const votesObj = {};
+          data.forEach(post => {
+            votesObj[post.id] = post.currentUserVote || 0;
+          });
+          setVotes(votesObj);
 
         } catch (error) {
           //catch error if fetch fails
@@ -117,6 +103,34 @@ export default function Feed() {
         alert("Error submitting post");
       }
     };
+    const handleVote = async (postId, value) => {
+      if (voteCooldown[postId]) return;
+      setVoteCooldown((prev) => ({ ...prev, [postId]: true }));
+
+      try {
+        const res = await fetch("api/votes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json"},
+          body: JSON.stringify({postId, value}),
+        });
+        if (res.ok) {
+        setVotes((prev) => ({
+        ...prev,
+        [postId]: prev[postId] === value ? 0 : value
+      }));
+      
+        } else {
+          alert("Failed to vote");
+        }
+      } catch (error) {
+        console.error("Error voting:", error);
+        alert("Error voting");
+      } finally {
+        setTimeout(() => {
+          setVoteCooldown((prev) => ({ ...prev, [postId]: false }));
+        }, 1000);
+      }
+    };
 
     const handleInteraction = (action) => {
       if (!session) {
@@ -126,19 +140,6 @@ export default function Feed() {
       action(); // Perform the action if authenticated
     };
 
-    const handleUpvote = (postId) => {
-      setVotes((prevVotes) => ({
-        ...prevVotes,
-        [postId]: (prevVotes[postId] || 0) + 1,
-      }));
-    };
-  
-    const handleDownvote = (postId) => {
-      setVotes((prevVotes) => ({
-        ...prevVotes,
-        [postId]: (prevVotes[postId] || 0) - 1,
-      }));
-    };
 
     //toggle sort to toggle between the state variable
     const toggleSort = () => {
@@ -240,14 +241,15 @@ export default function Feed() {
                 <button
                   onClick={() =>
                     handleInteraction(() =>
-                      handleUpvote(mockPosts[currentIndex]?.id)
+                      handleVote(posts[currentIndex]?.id, 1)
                     )
                   }
                   className={`flex-1 px-4 py-1 rounded-lg cursor-pointer text-center ${
-                    votes[mockPosts[currentIndex]?.id] === 1
-                      ? "bg-[#A5A1A1]"
+                    votes[posts[currentIndex]?.id] === 1
+                      ? "bg-[#8C8888]"
                       : "bg-[#BEBABA]"
                   }`}
+                  disabled={voteCooldown[posts[currentIndex]?.id]}
                 >
                   <IoMdArrowRoundUp size={18} className="mx-auto" />
                 </button>
@@ -256,14 +258,15 @@ export default function Feed() {
                 <button
                   onClick={() =>
                     handleInteraction(() =>
-                      handleDownvote(mockPosts[currentIndex]?.id)
+                      handleVote(posts[currentIndex]?.id, -1)
                     )
                   }
                   className={`flex-1 px-4 py-1 rounded-lg cursor-pointer text-center ${
-                    votes[mockPosts[currentIndex]?.id] === -1
-                      ? "bg-[#A5A1A1]"
+                    votes[posts[currentIndex]?.id] === -1
+                      ? "bg-[#8C8888]"
                       : "bg-[#BEBABA]"
                   }`}
+                  disabled={voteCooldown[posts[currentIndex]?.id]}
                 >
                   <IoMdArrowRoundDown size={18} className="mx-auto" />
                 </button>

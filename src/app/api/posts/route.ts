@@ -19,10 +19,24 @@ import { prisma } from "@/lib/prisma";
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const sort = searchParams.get("sort") || "newest";
+    let userId: string | undefined = undefined;
+
     try {
-        const posts = await getPosts(sort);
-        return NextResponse.json(posts);
-    }
+        const session = await auth();
+        if (session?.user?.email) {
+            const user = await prisma.user.findUnique({
+                where: { email: session.user.email },
+                select: { id: true }
+            });
+            userId = user?.id;
+        } 
+        
+    } catch {}
+        
+    try {
+            const posts = await getPosts(sort, userId);
+            return NextResponse.json(posts);
+        }
     catch (error) {
         console.error("Error fetching posts: ", error);
         return NextResponse.json({error: "failed to fetch posts" }, { status: 500 });

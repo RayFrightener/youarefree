@@ -15,8 +15,8 @@
 
 import { prisma } from "@/lib/prisma";
 
-export async function getPosts(sort: string) {
-    return prisma.post.findMany({
+export async function getPosts(sort: string, userId?: string) {
+    const posts = await prisma.post.findMany({
         orderBy: sort === "highest" ? { score: "desc" } : { createdAt: "desc"},
         include: {
             user: {
@@ -25,8 +25,21 @@ export async function getPosts(sort: string) {
                     name: true
                 },
             },
+            votes: userId
+                ? {
+                    where: { userId },
+                    select: { voteType: true }
+                }
+                : false,
         },
     });
+
+    // Add currentUserVote to each post
+    return posts.map(post => ({
+        ...post,
+        currentUserVote: post.votes?.[0]?.voteType ?? 0,
+        votes: undefined, // Remove raw votes array from response
+    }));
 }
 
 /** POST service
