@@ -10,6 +10,8 @@ import SignIn from "../../components/sign-in";
 import { signOut } from "next-auth/react";
 import { useModal } from "../../context/ModalContext";
 import ExpressForm from "../../components/ExpressForm";
+import CodeOfHonorModal from "../../components/CodeOfHonorModal";
+import UsernameSetupModal from "../../components/UsernameSetupModal";
 
 
 export default function Feed() {
@@ -23,8 +25,14 @@ export default function Feed() {
     const [voteCooldown, setVoteCooldown] = useState({});
     // express form state
     const [isExpressing, setIsExpressing] = useState(false);
+    //user profile to check the username
+    const [userProfile, setUserProfile] = useState(null);
+    // new user sign up modals
+    const [showCodeOfHonor, setShowCodeOfHonor] = useState(false);
+    const [showUsernameSetup, setShowUsernameSetup] = useState(false);
 
-  
+
+
       async function fetchPosts() {
 
         try {
@@ -118,7 +126,7 @@ export default function Feed() {
         ...prev,
         [postId]: prev[postId] === value ? 0 : value
       }));
-      
+
         } else {
           alert("Failed to vote");
         }
@@ -132,9 +140,23 @@ export default function Feed() {
       }
     };
 
-    const handleInteraction = (action) => {
+    const handleInteraction = async (action) => {
       if (!session) {
         setShowSignIn(true); // Show the sign-in button if not authenticated
+        return;
+      }
+      // Fetch user profile only after sign-in
+      if (!userProfile) {
+        const res = await fetch("/api/me");
+        const data = await res.json();
+        setUserProfile(data);
+        console.log(data);
+        if (!data.username) {
+          setShowCodeOfHonor(true);
+          return;
+        }
+      } else if (!userProfile.username) {
+        setShowCodeOfHonor(true);
         return;
       }
       action(); // Perform the action if authenticated
@@ -155,13 +177,54 @@ export default function Feed() {
       await signOut({ callbackUrl: "/feed" });
       setShowMore(false);
     }
+if (showCodeOfHonor) {
+  return (
+    <div className="flex items-center justify-center min-h-screen -mt-4">
+      <MainView>
+        <CodeOfHonorModal
+          onContinue={() => {
+            setShowCodeOfHonor(false);
+            setShowUsernameSetup(true);
+          }}
+        />
+      </MainView>
+    </div>
+  );
+}
 
-    // username, content filtered by newest/highestScore
-    //upvote and downvote
+if (showUsernameSetup) {
+  return (
+    <div className="flex items-center justify-center min-h-screen -mt-4">
+      <MainView>
+        <UsernameSetupModal
+          onBack={() => {
+            setShowUsernameSetup(false);
+            setShowCodeOfHonor(true);
+          }}
+          onSubmit={async (username) => {
+            await fetch("/api/set-username", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username }),
+            });
+            // Refetch user profile
+            fetch("/api/me")
+              .then(res => res.json())
+              .then(data => {
+                setUserProfile(data);
+                setShowUsernameSetup(false);
+              });
+          }}
+        />
+      </MainView>
+    </div>
+  );
+}
     return (
         <div className="flex items-center justify-center min-h-screen -mt-4">
-      {/* <Header onMore={() => setShowMore(true)} /> <-- This is key */}
-<MainView>
+  <MainView>
+      
+
       <AnimatePresence mode="wait">
         {showSignIn ? (
           <motion.div
