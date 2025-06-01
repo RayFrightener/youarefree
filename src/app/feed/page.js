@@ -12,6 +12,7 @@ import { useModal } from "../../context/ModalContext";
 import ExpressForm from "../../components/ExpressForm";
 import CodeOfHonorModal from "../../components/CodeOfHonorModal";
 import UsernameSetupModal from "../../components/UsernameSetupModal";
+import UserProfile from "../../components/UserProfile";
 
 
 export default function Feed() {
@@ -30,6 +31,8 @@ export default function Feed() {
     // new user sign up modals
     const [showCodeOfHonor, setShowCodeOfHonor] = useState(false);
     const [showUsernameSetup, setShowUsernameSetup] = useState(false);
+    // user profile data
+    const [selectedUserProfile, setSelectedUserProfile] = useState(null);
 
 
 
@@ -111,6 +114,7 @@ export default function Feed() {
         alert("Error submitting post");
       }
     };
+
     const handleVote = async (postId, value) => {
       if (voteCooldown[postId]) return;
       setVoteCooldown((prev) => ({ ...prev, [postId]: true }));
@@ -162,6 +166,15 @@ export default function Feed() {
       action(); // Perform the action if authenticated
     };
 
+    const handleUserClick = async (username) => {
+      const res = await fetch(`/api/user/${username}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedUserProfile(data);
+      } else {
+        alert("User not found");
+      }
+    };
 
     //toggle sort to toggle between the state variable
     const toggleSort = () => {
@@ -177,6 +190,8 @@ export default function Feed() {
       await signOut({ callbackUrl: "/feed" });
       setShowMore(false);
     }
+
+
 if (showCodeOfHonor) {
   return (
     <div className="flex items-center justify-center min-h-screen -mt-4">
@@ -274,6 +289,12 @@ if (showUsernameSetup) {
                 onBack={() => setIsExpressing(false)}
                 onSubmit={handleExpressionSubmission}
                 />
+            ) : selectedUserProfile ? (
+              <UserProfile
+                profile={selectedUserProfile}
+                onBack={() => {setSelectedUserProfile(null)}}
+                />
+
             ) : (
           <motion.div
             key={`${currentIndex}-${sort}`}
@@ -284,10 +305,21 @@ if (showUsernameSetup) {
             className="w-full h-full flex flex-col items-center justify-center"
           >
             {/* Post Content */}
-            <div className="flex-grow flex items-center justify-center">
+            <div className="flex-grow flex items-center justify-center flex-col">
               <h2 className="text-xl text-center">
                 {posts[currentIndex]?.content || "No posts available"}
               </h2>
+              {posts[currentIndex]?.user?.username && (
+                <div className="mt-2 text-sm text-[#8C8888]">
+                  —{" "}
+                  <button
+                    className="hover:underline"
+                    onClick={() => handleUserClick(posts[currentIndex].user.username)}
+                  >
+                    {posts[currentIndex].user.username}
+                  </button>
+                </div>
+              )}
             </div>
             {/* Buttons */}
             <div className="w-full px-2 sm:px-8 m-4">

@@ -55,7 +55,7 @@ export default function UsernameSetupModal({ onBack, onSubmit }) {
     const res = await fetch(`/api/username-available?username=${encodeURIComponent(trimmed)}`);
     const data = await res.json();
     if (!data.available) {
-        setError("This username is already take, please choose another");
+        setError("This username is already taken, please choose another");
         return;
     }
 
