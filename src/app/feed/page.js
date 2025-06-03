@@ -36,6 +36,7 @@ export default function Feed() {
     const [selectedUserProfile, setSelectedUserProfile] = useState(null);
     const [flaggedPosts, setFlaggedPosts] = useState({});
     const [flagNotification, setFlagNotification] = useState("");
+    const [showOwnProfile, setShowOwnProfile] = useState(false);
 
 
 
@@ -88,6 +89,14 @@ export default function Feed() {
         window.removeEventListener("keydown", handleKeyDown);
       }
     }, [currentIndex, posts.length]);
+
+    useEffect(() => {
+  if (showOwnProfile && !userProfile) {
+    fetch("/api/me")
+      .then(res => res.json())
+      .then(data => setUserProfile(data));
+  }
+}, [showOwnProfile, userProfile]);
 
     /** function to handle expression submission
      * create a const handleExpressSubmit async with expression as its variable
@@ -170,6 +179,19 @@ export default function Feed() {
       } else {
         setFlagNotification(data.error || "Failed to flag post.");
         setTimeout(() => setFlagNotification(""), 3000)
+      }
+    };
+
+      const handleDeletePost = async (postId) => {
+      const res = await fetch(`/api/posts/${postId}/delete`, { method: "POST" });
+      if (res.ok) {
+        setUserProfile((prev) => ({
+          ...prev,
+          posts: prev.posts.filter(post => post.id !== postId)
+        }));
+        fetchPosts(); 
+      } else {
+        alert("Failed to delete post.");
       }
     };
 
@@ -264,6 +286,21 @@ if (showUsernameSetup) {
     </div>
   );
 }
+
+if (showOwnProfile) {
+  return (
+    <div className="flex items-center justify-center min-h-screen -mt-4">
+      <MainView>
+        <UserProfile
+          profile={userProfile}
+          onBack={() => setShowOwnProfile(false)}
+          isOwnProfile={true}
+          onDeletePost={handleDeletePost}
+        />
+      </MainView>
+    </div>
+  )
+}
     return (
         <div className="flex items-center justify-center min-h-screen -mt-4">
   <MainView>
@@ -296,6 +333,15 @@ if (showUsernameSetup) {
                 ) : (
                   // If signed in, show sign out button
                   <div className="flex flex-col items-center justify-center w-full">
+                    <button 
+                    className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4"
+                    onClick={() => {
+                      setShowOwnProfile(true);
+                      setShowMore(false);
+                    }}
+                    >
+                      Profile
+                    </button>
                     <button
                       onClick={handleSignOut}
                       className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4"

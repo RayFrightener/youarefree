@@ -18,6 +18,16 @@ export async function GET() {
             email: true,
             name: true,
             username: true,
+            posts: {
+                where: { isDeleted: false }, // Only show non-deleted posts
+                orderBy: { createdAt: "desc" },
+                select: {
+                    id: true,
+                    content: true,
+                    score: true,
+                    createdAt: true,
+                }
+            }
         },
     });
 

@@ -1,6 +1,7 @@
 import { IoMdArrowBack } from "react-icons/io";
+import { IoTrashBinOutline } from "react-icons/io5";
 
-export default function UserProfile({ profile, onBack }) {
+export default function UserProfile({ profile, onBack, isOwnProfile = false, onDeletePost }) {
     if (!profile) return <div>Loading...</div>;
     const posts = Array.isArray(profile.posts) ? profile.posts : [];
 
@@ -36,6 +37,14 @@ export default function UserProfile({ profile, onBack }) {
                             <span className="font-mono">
                             +{post.score} upvotes
                             </span>
+                            { isOwnProfile && (
+                                <button
+                                className="ml-2 text-red-500 hover:underline"
+                                onClick={() => onDeletePost && onDeletePost(post.id)}
+                                >
+                                    <IoTrashBinOutline size={18}/>
+                                </button>
+                            )}
                         </div>
                         </div>
                     ))

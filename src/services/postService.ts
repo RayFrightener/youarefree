@@ -19,6 +19,7 @@ const COOLDOWN_MINUTES = 10;
 
 export async function getPosts(sort: string, userId?: string) {
     const posts = await prisma.post.findMany({
+        where: { isDeleted: false },
         orderBy: sort === "highest" ? { score: "desc" } : { createdAt: "desc"},
         include: {
             user: {
