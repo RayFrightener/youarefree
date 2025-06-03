@@ -15,6 +15,8 @@
 
 import { prisma } from "@/lib/prisma";
 
+const COOLDOWN_MINUTES = 10;
+
 export async function getPosts(sort: string, userId?: string) {
     const posts = await prisma.post.findMany({
         orderBy: sort === "highest" ? { score: "desc" } : { createdAt: "desc"},
@@ -50,7 +52,24 @@ export async function getPosts(sort: string, userId?: string) {
  */
 
 export async function createPost(content: string, userId: string) {
-    return prisma.post.create({
+    //check cooldown
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { lastPostAt: true }
+    });
+
+    if (user?.lastPostAt) {
+        const now = new Date();
+        const last = new Date(user.lastPostAt);
+
+        const diffMs = now.getTime() - last.getTime();
+        if (diffMs < COOLDOWN_MINUTES * 60 * 1000) {
+            const secondsLeft = Math.ceil((COOLDOWN_MINUTES * 60 * 1000 - diffMs) / 1000);
+            throw { cooldown: true, secondsLeft};
+        }
+    }
+
+    const post = await prisma.post.create({
         data: {
             content,
             userId
@@ -64,4 +83,11 @@ export async function createPost(content: string, userId: string) {
             },
         },
     });
+
+    await prisma.user.update({
+        where: { id: userId },
+        data: { lastPostAt: new Date() }
+    });
+
+    return post;
 }

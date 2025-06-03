@@ -106,15 +106,17 @@ export default function Feed() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: expression }),
         });
+        const data = await res.json(); 
         if (res.ok) {
           setIsExpressing(false);
           fetchPosts();
+          return null;
         } else {
-          alert("Failed to submit post");
+          return data.error || "Failed to submit post";
         }
       } catch (error) {
         console.error("Error submitting post:", error);
-        alert("Error submitting post");
+        return "Error submitting post"
       }
     };
 

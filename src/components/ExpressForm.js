@@ -54,7 +54,13 @@ export default function ExpressForm({ onBack, onSubmit }) {
         }
     }, [error]);
     
-    const handleSubmit = () => {
+    function containsBannedWords(input) {
+    const bannedWords = new Set(["shit", "fuck", "bitch", "hate", "racist", "slur", "kill", "nazi", "rape", "porn","pussy", "dick", "cock", "vagina", "penis", "boobs", "tits", "nipple", "ass", "butt", "cum", "ejaculate", "orgasm", "anal", "sex", "horny", "bang", "nude", "nudes", "naked", "thong", "fetish","fuck", "shit", "bitch", "bastard", "asshole", "dumb", "stupid", "retard", "idiot", "crap", "damn", "fucking", "fucked","kill", "murder", "suicide", "hang", "die", "stab", "shoot", "gun", "bomb", "explode", "terrorist","chink", "nigger", "faggot", "kike", "tranny", "whore", "slut"
+]);
+    const words = input.toLowerCase().split(/\s+/);
+    return words.some(word => bannedWords.has(word));
+}
+    const handleSubmit = async () => {
         const trimmed = expression.trim();
         if (trimmed.length === 0) {
             setError("Expression can't be empty, please express something");
@@ -64,8 +70,14 @@ export default function ExpressForm({ onBack, onSubmit }) {
             setError("Expression too bit, please shorten it");
             return;
         }
-        setError("");
-        onSubmit(trimmed);
+        if (containsBannedWords(trimmed)) {
+        setError("Your expression contains inappropriate language.");
+        return;
+    }
+        const backendError = await onSubmit(trimmed);
+        if (backendError) {
+            setError(backendError);
+        }
     }
     
     return (

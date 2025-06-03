@@ -71,10 +71,18 @@ export async function POST (request: Request) {
             return NextResponse.json({ error: "User not found " }, { status: 404 });
         }
         
-        //call service to post into databse
-        const post = await createPost(content, user.id);
-        return NextResponse.json(post, { status: 201 });
-    }   catch (error) {
+        try {
+            const post = await createPost(content, user.id);
+            return NextResponse.json(post, { status: 201 });
+        } catch (err) {
+            if (err.cooldown) {
+                return NextResponse.json({
+                    error: `Please wait ${Math.floor(err.secondsLeft / 60)}m ${err.secondsLeft % 60}s before posting again.`
+                }, { status: 429 });
+            }
+            throw err;
+        }
+        } catch (error) {
             console.error("Error creating post: ", error);
             return NextResponse.json({ error: "Failed to create a post"}, { status: 500 });
         }
