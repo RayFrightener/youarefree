@@ -4,6 +4,7 @@ import { motion } from "motion/react"
 import { AnimatePresence } from "motion/react"
 import { useState, useEffect } from "react";
 import { IoMdArrowRoundUp, IoMdArrowRoundDown } from "react-icons/io";
+import { IoFlagOutline } from "react-icons/io5";
 import MainView from "../../components/MainView";
 import { useSession } from "next-auth/react";
 import SignIn from "../../components/sign-in";
@@ -33,6 +34,8 @@ export default function Feed() {
     const [showUsernameSetup, setShowUsernameSetup] = useState(false);
     // user profile data
     const [selectedUserProfile, setSelectedUserProfile] = useState(null);
+    const [flaggedPosts, setFlaggedPosts] = useState({});
+    const [flagNotification, setFlagNotification] = useState("");
 
 
 
@@ -144,6 +147,30 @@ export default function Feed() {
       }
     };
 
+    const handleFlagPosts = async (postId) => {
+      const res = await fetch("/api/flag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId }), 
+      });
+
+      const data = await res.json();
+      if ( res.ok) {
+        setFlaggedPosts( prev => ({
+          ...prev, [postId]: data.flagged
+        }));
+        setFlagNotification(
+          data.flagged 
+          ? "You have successfully flagged this post. Thank you!"
+          : "You have successfully un-flagged this post. Thank you!"
+        );
+        setTimeout(() => setFlagNotification(""), 3000);
+      } else {
+        setFlagNotification(data.error || "Failed to flag post.");
+        setTimeout(() => setFlagNotification(""), 3000)
+      }
+    };
+
     const handleInteraction = async (action) => {
       if (!session) {
         setShowSignIn(true); // Show the sign-in button if not authenticated
@@ -238,8 +265,6 @@ if (showUsernameSetup) {
     return (
         <div className="flex items-center justify-center min-h-screen -mt-4">
   <MainView>
-      
-
       <AnimatePresence mode="wait">
         {showSignIn ? (
           <motion.div
@@ -310,14 +335,32 @@ if (showUsernameSetup) {
                 {posts[currentIndex]?.content || "No posts available"}
               </h2>
               {posts[currentIndex]?.user?.username && (
-                <div className="mt-2 text-sm text-[#8C8888]">
-                  —{" "}
+                <div className="mt-2 text-sm text-[#8C8888] relative w-full max-w-sm flex items-center justify-center">
+                  <span className="mx-auto flex items-center">
+                    —{" "}
+                    <button
+                      className="hover:underline"
+                      onClick={() => handleUserClick(posts[currentIndex].user.username)}
+                    >
+                      {posts[currentIndex].user.username}
+                    </button>
+                  </span>
                   <button
-                    className="hover:underline"
-                    onClick={() => handleUserClick(posts[currentIndex].user.username)}
-                  >
-                    {posts[currentIndex].user.username}
-                  </button>
+                    className={`absolute right-0 transition-opacity ${
+                      flaggedPosts[posts[currentIndex]?.id]
+                      ? "text-red-500 opacity 80"
+                      : "opacity-40 hover:opacity-80"
+                    }`}
+                    title="Flag this post"
+                    onClick={() => handleFlagPosts(posts[currentIndex].id)}
+                    >
+                      <IoFlagOutline size={18} />
+                    </button>
+                    {flagNotification && (
+                            <div className="absolute right-0 mt-18 w-max bg-[#F5F5F5] text-[#8C8888] text-xs px-3 py-1 rounded shadow z-10">
+                              {flagNotification}
+                            </div>
+                  )}
                 </div>
               )}
             </div>
