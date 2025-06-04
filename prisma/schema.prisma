@@ -29,6 +29,7 @@ model User {
   posts         Post[]
   votes         Vote[]
   flags         Flag[]
+  feedback      Feedback[]
   accounts      Account[]
   sessions      Session[]
   Authenticators Authenticator[]
@@ -72,6 +73,16 @@ model Flag {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  category  String
+  message   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Account {

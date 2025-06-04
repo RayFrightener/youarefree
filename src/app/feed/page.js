@@ -14,6 +14,7 @@ import ExpressForm from "../../components/ExpressForm";
 import CodeOfHonorModal from "../../components/CodeOfHonorModal";
 import UsernameSetupModal from "../../components/UsernameSetupModal";
 import UserProfile from "../../components/UserProfile";
+import Feedback from "../../components/Feedback";
 
 
 export default function Feed() {
@@ -37,6 +38,7 @@ export default function Feed() {
     const [flaggedPosts, setFlaggedPosts] = useState({});
     const [flagNotification, setFlagNotification] = useState("");
     const [showOwnProfile, setShowOwnProfile] = useState(false);
+    const [showFeedback, setShowFeedback] = useState(false);
 
 
 
@@ -195,6 +197,20 @@ export default function Feed() {
       }
     };
 
+    const handleFeedbackSubmit = async (category, message) => {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-type": "applications/json"},
+        body: JSON.stringify({ category, message }),
+      });
+
+      if(!res.ok) {
+        const data = await res.json();
+        return data.error || "Failed to send feedback";
+      }
+      return null;
+    };
+
     const handleInteraction = async (action) => {
       if (!session) {
         setShowSignIn(true); // Show the sign-in button if not authenticated
@@ -301,6 +317,20 @@ if (showOwnProfile) {
     </div>
   )
 }
+
+if (showFeedback) {
+  return (
+    <div className="flex items-center justify-center min-h-screen -mt-4">
+      <MainView>
+        <Feedback
+          onBack={() => setShowFeedback(false)}
+          onSubmit={handleFeedbackSubmit}
+        />
+      </MainView>
+    </div>
+  );
+}
+
     return (
         <div className="flex items-center justify-center min-h-screen -mt-4">
   <MainView>
@@ -342,6 +372,15 @@ if (showOwnProfile) {
                     >
                       Profile
                     </button>
+                  <button 
+                    className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4"
+                    onClick={() => {
+                      setShowFeedback(true);
+                      setShowMore(false);
+                    }}
+                  >
+                    Give Feedback
+                  </button>
                     <button
                       onClick={handleSignOut}
                       className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4"
