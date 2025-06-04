@@ -16,237 +16,78 @@ import UsernameSetupModal from "../../components/UsernameSetupModal";
 import UserProfile from "../../components/UserProfile";
 import Feedback from "../../components/Feedback";
 
+//hooks
+import {
+  useExpressionSubmission,
+  useVote,
+  useFlag,
+  useDeletePost,
+  useFeedback,
+  useInteraction,
+  useUserProfileClick,
+  useToggleSort,  
+  usePosts,
+  useOwnProfile,
+  useKeyboardNavigation,
+} from "../../hooks/useFeedLogic";
+
+
 
 export default function Feed() {
     const { data: session, status } = useSession();
     const [showSignIn, setShowSignIn] = useState(false);
-    const [posts, setPosts] = useState([]);
-    const [sort, setSort] = useState("newest");
+    // const [posts, setPosts] = useState([]);
+    // const [sort, setSort] = useState("newest");
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [votes, setVotes] = useState({}); // tracks votes for each post by ID
+    // const [votes, setVotes] = useState({}); // tracks votes for each post by ID
     const { showMore, setShowMore } = useModal();
-    const [voteCooldown, setVoteCooldown] = useState({});
+    // const [voteCooldown, setVoteCooldown] = useState({});
     // express form state
-    const [isExpressing, setIsExpressing] = useState(false);
+    // const [isExpressing, setIsExpressing] = useState(false);
     //user profile to check the username
-    const [userProfile, setUserProfile] = useState(null);
+    // const [userProfile, setUserProfile] = useState(null);
     // new user sign up modals
     const [showCodeOfHonor, setShowCodeOfHonor] = useState(false);
     const [showUsernameSetup, setShowUsernameSetup] = useState(false);
     // user profile data
     const [selectedUserProfile, setSelectedUserProfile] = useState(null);
-    const [flaggedPosts, setFlaggedPosts] = useState({});
-    const [flagNotification, setFlagNotification] = useState("");
+    // const [flaggedPosts, setFlaggedPosts] = useState({});
+    // const [flagNotification, setFlagNotification] = useState("");
     const [showOwnProfile, setShowOwnProfile] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
-
-
-
-      async function fetchPosts() {
-
-        try {
-          //try doing a request using fetch to the api route with fetch(apiroute+queryParam)
-          const res = await fetch(`/api/posts?sort=${sort}`);
-          //convert res to json
-          const data = await res.json();
-          //assign data to state variable
-          setPosts(data);
-
-          //build votes state from fetched posts
-          const votesObj = {};
-          data.forEach(post => {
-            votesObj[post.id] = post.currentUserVote || 0;
-          });
-          setVotes(votesObj);
-
-        } catch (error) {
-          //catch error if fetch fails
-          console.error("Error fetching posts", error);
-        }
-      }     
-
-    //use effect because fetch or GET is a sideeffect
-    useEffect(() => {
-      //declare async function
-      //run the function
-      fetchPosts();
-    }, [sort]);
-
-    useEffect(() => {
-      const handleKeyDown = (event) => {
-        if (event.key === "ArrowDown") {
-          if (currentIndex < posts.length - 1) {
-            setCurrentIndex((prevIndex) => prevIndex + 1);
-          }
-        } else if ( event.key === "ArrowUp") {
-          if (currentIndex > 0) {
-            setCurrentIndex((prevIndex) => prevIndex - 1);
-          }
-        }
-      };
-
-      window.addEventListener("keydown", handleKeyDown);
-
-      return () => {
-        window.removeEventListener("keydown", handleKeyDown);
-      }
-    }, [currentIndex, posts.length]);
-
-    useEffect(() => {
-  if (showOwnProfile && !userProfile) {
-    fetch("/api/me")
-      .then(res => res.json())
-      .then(data => setUserProfile(data));
-  }
-}, [showOwnProfile, userProfile]);
-
-    /** function to handle expression submission
-     * create a const handleExpressSubmit async with expression as its variable
-     * in that we do a try catch block
-     * try 
-     * const res(that we receive) from the api route -> fetch with api route
-     * fetch takes in info of the HTTP method in our case: 
-     * method post
-     * header
-     */
-
-    const handleExpressionSubmission = async (expression) => {
-      try {
-        const res = await fetch("/api/posts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: expression }),
-        });
-        const data = await res.json(); 
-        if (res.ok) {
-          setIsExpressing(false);
-          fetchPosts();
-          return null;
-        } else {
-          return data.error || "Failed to submit post";
-        }
-      } catch (error) {
-        console.error("Error submitting post:", error);
-        return "Error submitting post"
-      }
-    };
-
-    const handleVote = async (postId, value) => {
-      if (voteCooldown[postId]) return;
-      setVoteCooldown((prev) => ({ ...prev, [postId]: true }));
-
-      try {
-        const res = await fetch("api/votes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json"},
-          body: JSON.stringify({postId, value}),
-        });
-        if (res.ok) {
-        setVotes((prev) => ({
-        ...prev,
-        [postId]: prev[postId] === value ? 0 : value
-      }));
-
-        } else {
-          alert("Failed to vote");
-        }
-      } catch (error) {
-        console.error("Error voting:", error);
-        alert("Error voting");
-      } finally {
-        setTimeout(() => {
-          setVoteCooldown((prev) => ({ ...prev, [postId]: false }));
-        }, 1000);
-      }
-    };
-
-    const handleFlagPosts = async (postId) => {
-      const res = await fetch("/api/flag", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId }), 
+    //extracted logic
+          const {
+        posts,
+        setPosts,
+        sort,
+        setSort,
+        votes,
+        setVotes,
+        fetchPosts
+      } = usePosts();
+    const { isExpressing, setIsExpressing, handleExpressionSubmission } = useExpressionSubmission(fetchPosts);
+    const { userProfile, setUserProfile, handleDeletePost } = useDeletePost(fetchPosts);
+    const {
+      voteCooldown,
+      setVoteCooldown,
+      handleVote
+    } = useVote(votes, setVotes);
+    const { flaggedPosts, flagNotification, handleFlagPosts } = useFlag();
+    const { handleFeedbackSubmit } = useFeedback();
+    const { handleInteraction } = useInteraction({
+      session,
+      setShowSignIn,
+      userProfile,
+      setUserProfile,
+      setShowCodeOfHonor
       });
 
-      const data = await res.json();
-      if ( res.ok) {
-        setFlaggedPosts( prev => ({
-          ...prev, [postId]: data.flagged
-        }));
-        setFlagNotification(
-          data.flagged 
-          ? "You have successfully flagged this post. Thank you!"
-          : "You have successfully un-flagged this post. Thank you!"
-        );
-        setTimeout(() => setFlagNotification(""), 3000);
-      } else {
-        setFlagNotification(data.error || "Failed to flag post.");
-        setTimeout(() => setFlagNotification(""), 3000)
-      }
-    };
-
-      const handleDeletePost = async (postId) => {
-      const res = await fetch(`/api/posts/${postId}/delete`, { method: "POST" });
-      if (res.ok) {
-        setUserProfile((prev) => ({
-          ...prev,
-          posts: prev.posts.filter(post => post.id !== postId)
-        }));
-        fetchPosts(); 
-      } else {
-        alert("Failed to delete post.");
-      }
-    };
-
-    const handleFeedbackSubmit = async (category, message) => {
-      const res = await fetch("/api/feedback", {
-        method: "POST",
-        headers: { "Content-type": "applications/json"},
-        body: JSON.stringify({ category, message }),
-      });
-
-      if(!res.ok) {
-        const data = await res.json();
-        return data.error || "Failed to send feedback";
-      }
-      return null;
-    };
-
-    const handleInteraction = async (action) => {
-      if (!session) {
-        setShowSignIn(true); // Show the sign-in button if not authenticated
-        return;
-      }
-      // Fetch user profile only after sign-in
-      if (!userProfile) {
-        const res = await fetch("/api/me");
-        const data = await res.json();
-        setUserProfile(data);
-        console.log(data);
-        if (!data.username) {
-          setShowCodeOfHonor(true);
-          return;
-        }
-      } else if (!userProfile.username) {
-        setShowCodeOfHonor(true);
-        return;
-      }
-      action(); // Perform the action if authenticated
-    };
-
-    const handleUserClick = async (username) => {
-      const res = await fetch(`/api/user/${username}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSelectedUserProfile(data);
-      } else {
-        alert("User not found");
-      }
-    };
-
-    //toggle sort to toggle between the state variable
-    const toggleSort = () => {
-      setSort((prevSort) => (prevSort === "newest" ? "highest" : "newest"));
-    };
+    const { handleUserClick } = useUserProfileClick(setSelectedUserProfile);
+    const { toggleSort } = useToggleSort(setSort);
+  
+    
+    useOwnProfile(showOwnProfile, userProfile, setUserProfile);
+    useKeyboardNavigation(currentIndex, setCurrentIndex, posts.length);
 
       // Prevent rendering until session status is determined
     if (status === "loading") {
