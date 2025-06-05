@@ -96,7 +96,7 @@ export default function Feedback({ onBack, onSubmit }) {
                 )}
                 {success && (
                     <div className="flex justify-center w-full mb-2">
-                        <span className="text-sm text-green-600 text-center">{success}</span>
+                        <span className="text-sm text-[#8C8888] text-center">{success}</span>
                     </div>
                     )}
             </div>

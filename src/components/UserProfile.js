@@ -8,7 +8,7 @@ export default function UserProfile({ profile, onBack, isOwnProfile = false, onD
     return (
         <div className="flex flex-col h-full w-full">
             <div className="flex items-center mb-4 mt-4 ml-2">
-                <button onClick={onBack} className="m3-3" aria-label="Back to feed">
+                <button onClick={onBack} className="m3-3 cursor-pointer" aria-label="Back to feed">
                     <IoMdArrowBack size={24} />
                 </button>
                 <span className="text-xl font-semibold">{profile.username}</span>
@@ -39,7 +39,7 @@ export default function UserProfile({ profile, onBack, isOwnProfile = false, onD
                             </span>
                             { isOwnProfile && (
                                 <button
-                                className="ml-2 text-red-500 hover:underline"
+                                className="ml-2 text-red-500 hover:underline cursor-pointer"
                                 onClick={() => onDeletePost && onDeletePost(post.id)}
                                 >
                                     <IoTrashBinOutline size={18}/>

@@ -24,7 +24,7 @@ export default function Header() {
           {/* Right: More element */}
           <button 
             onClick={() => setShowMore(true)}
-            className="px-3 py-1 bg-[#DCD9D9] text-[#9C9191] rounded hover:bg-[#C7BEBE] transition"
+            className="px-3 py-1 bg-[#DCD9D9] text-[#9C9191] rounded hover:bg-[#C7BEBE] transition cursor-pointer"
             >
               More
             </button>

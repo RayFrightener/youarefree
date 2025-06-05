@@ -81,16 +81,17 @@ export default function ExpressForm({ onBack, onSubmit }) {
     }
     
     return (
-        <div className="flex flex-col justify-between h-full w-full">
+        <div className="flex flex-col justify-between h-full w-full ">
             {/* Top: Back button and textarea */}
-            <div className="flex flex-col items-start">
+            <div className="flex flex-col items-start ">
                 <button
-                    className="mb-4 mt-4 ml-2"
+                    className="mb-4 mt-4 ml-2 cursor-pointer"
                     onClick={onBack}
                     aria-label="Back to Feed"
                 >
                     <IoMdArrowBack size={24}/>
                 </button>
+            <div className="w-full px-2 sm:px-4">
                 <textarea
                     className="w-full p-2 rounded border-2 border-[#9C9191] mb-4 focus:outline-none"
                     placeholder="Express a reflection of the truth..."
@@ -99,14 +100,15 @@ export default function ExpressForm({ onBack, onSubmit }) {
                 />
                 <div className="flex justify-end w-full px-1 mb-2">
                     <span className={`text-xs ${expression.length > MAX_LENGTH ? "text-red-500" : "text-[#9C9191]"}`}>
-                        {expression.length} / {MAX_LENGTH}
+                    {expression.length} / {MAX_LENGTH}
                     </span>
                 </div>
                 {error && (
                     <div className="flex justify-center w-full mb-2">
-                        <span className="text-sm text-red-500 text-center">{error}</span>
+                    <span className="text-sm text-red-500 text-center">{error}</span>
                     </div>
                 )}
+                </div>
             </div>
             {/* Bottom: Express button aligned right */}
             <div className="flex justify-end">

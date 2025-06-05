@@ -4,6 +4,7 @@ import { motion } from "motion/react"
 import { AnimatePresence } from "motion/react"
 import { useState, useEffect } from "react";
 import { IoMdArrowRoundUp, IoMdArrowRoundDown } from "react-icons/io";
+import { IoMdArrowBack } from "react-icons/io";
 import { IoFlagOutline } from "react-icons/io5";
 import MainView from "../../components/MainView";
 import { useSession } from "next-auth/react";
@@ -32,27 +33,17 @@ import {
 } from "../../hooks/useFeedLogic";
 
 
-
 export default function Feed() {
+
     const { data: session, status } = useSession();
     const [showSignIn, setShowSignIn] = useState(false);
-    // const [posts, setPosts] = useState([]);
-    // const [sort, setSort] = useState("newest");
     const [currentIndex, setCurrentIndex] = useState(0);
-    // const [votes, setVotes] = useState({}); // tracks votes for each post by ID
     const { showMore, setShowMore } = useModal();
-    // const [voteCooldown, setVoteCooldown] = useState({});
-    // express form state
-    // const [isExpressing, setIsExpressing] = useState(false);
-    //user profile to check the username
-    // const [userProfile, setUserProfile] = useState(null);
     // new user sign up modals
     const [showCodeOfHonor, setShowCodeOfHonor] = useState(false);
     const [showUsernameSetup, setShowUsernameSetup] = useState(false);
     // user profile data
     const [selectedUserProfile, setSelectedUserProfile] = useState(null);
-    // const [flaggedPosts, setFlaggedPosts] = useState({});
-    // const [flagNotification, setFlagNotification] = useState("");
     const [showOwnProfile, setShowOwnProfile] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
     //extracted logic
@@ -68,112 +59,201 @@ export default function Feed() {
     const { isExpressing, setIsExpressing, handleExpressionSubmission } = useExpressionSubmission(fetchPosts);
     const { userProfile, setUserProfile, handleDeletePost } = useDeletePost(fetchPosts);
     const {
-      voteCooldown,
-      setVoteCooldown,
-      handleVote
-    } = useVote(votes, setVotes);
+            handleVote
+        } = useVote(votes, setVotes);
     const { flaggedPosts, flagNotification, handleFlagPosts } = useFlag();
     const { handleFeedbackSubmit } = useFeedback();
     const { handleInteraction } = useInteraction({
-      session,
-      setShowSignIn,
-      userProfile,
-      setUserProfile,
-      setShowCodeOfHonor
-      });
+            session,
+            setShowSignIn,
+            userProfile,
+            setUserProfile,
+            setShowCodeOfHonor
+          });
 
     const { handleUserClick } = useUserProfileClick(setSelectedUserProfile);
     const { toggleSort } = useToggleSort(setSort);
-  
     
     useOwnProfile(showOwnProfile, userProfile, setUserProfile);
     useKeyboardNavigation(currentIndex, setCurrentIndex, posts.length);
 
-      // Prevent rendering until session status is determined
-    if (status === "loading") {
-    return <div>Loading...</div>; // Show a loading state while session is being determined
-    }
-    
     const handleSignOut = async () => {
       await signOut({ callbackUrl: "/feed" });
       setShowMore(false);
     }
-
-
-if (showCodeOfHonor) {
-  return (
-    <div className="flex items-center justify-center min-h-screen -mt-4">
-      <MainView>
-        <CodeOfHonorModal
-          onContinue={() => {
-            setShowCodeOfHonor(false);
-            setShowUsernameSetup(true);
-          }}
-        />
-      </MainView>
-    </div>
-  );
-}
-
-if (showUsernameSetup) {
-  return (
-    <div className="flex items-center justify-center min-h-screen -mt-4">
-      <MainView>
-        <UsernameSetupModal
-          onBack={() => {
-            setShowUsernameSetup(false);
-            setShowCodeOfHonor(true);
-          }}
-          onSubmit={async (username) => {
-            await fetch("/api/set-username", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ username }),
+      // Add this effect:
+    useEffect(() => {
+      // Only run if signed in, not loading, and not already showing modals
+      if (
+        session &&
+        !showCodeOfHonor &&
+        !showUsernameSetup &&
+        userProfile !== undefined // userProfile can be null, but not undefined
+      ) {
+        // If userProfile is null, fetch it
+        if (!userProfile) {
+          fetch("/api/me")
+            .then(res => res.json())
+            .then(data => {
+              setUserProfile(data);
+              if (!data.username) {
+                setShowCodeOfHonor(true);
+              }
             });
-            // Refetch user profile
-            fetch("/api/me")
-              .then(res => res.json())
-              .then(data => {
-                setUserProfile(data);
-                setShowUsernameSetup(false);
+        } else if (!userProfile.username) {
+          setShowCodeOfHonor(true);
+        }
+      }
+    }, [session, userProfile, showCodeOfHonor, showUsernameSetup]);
+
+  // Prevent rendering until session status is determined
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-screen -mt-4">
+        <MainView>
+          <motion.div
+            key="signin"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full h-full flex items-center justify-center"
+          >
+            <div className="flex flex-col items-center justify-center py-12">
+            {/* Spinner */}
+            <svg className="animate-spin h-8 w-8 text-[#8C8888] mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            {/* Friendly message */}
+            <div className="text-lg text-[#8C8888] font-medium">Preparing your uplifting feed...</div>
+          </div>
+          </motion.div>
+        </MainView>
+      </div>
+    );
+  }
+
+
+  if (showCodeOfHonor) {
+    return (
+      <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
+        <MainView>
+          <motion.div
+            key="signin"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full h-full flex items-center justify-center"
+          >
+            <CodeOfHonorModal
+            onContinue={() => {
+              setShowCodeOfHonor(false);
+              setShowUsernameSetup(true);
+            }}
+          />
+          </motion.div>
+        </MainView>
+      </div>
+    );
+  }
+
+
+
+  if (showUsernameSetup) {
+    return (
+      <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
+        <MainView>
+          
+          <motion.div
+            key="signin"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full h-full flex items-center justify-center"
+          >
+            <UsernameSetupModal
+            onBack={() => {
+              setShowUsernameSetup(false);
+              setShowCodeOfHonor(true);
+            }}
+            onSubmit={async (username) => {
+              await fetch("/api/set-username", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username }),
               });
-          }}
-        />
-      </MainView>
-    </div>
-  );
-}
+              // Refetch user profile
+              fetch("/api/me")
+                .then(res => res.json())
+                .then(data => {
+                  setUserProfile(data);
+                  setShowUsernameSetup(false);
+                });
+            }}
+          />
+          </motion.div>
+        </MainView>
+      </div>
+    );
+  }
 
-if (showOwnProfile) {
-  return (
-    <div className="flex items-center justify-center min-h-screen -mt-4">
-      <MainView>
-        <UserProfile
-          profile={userProfile}
-          onBack={() => setShowOwnProfile(false)}
-          isOwnProfile={true}
-          onDeletePost={handleDeletePost}
-        />
-      </MainView>
-    </div>
-  )
-}
+  if (showOwnProfile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
+        <MainView>
+        <motion.div
+            key="signin"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full h-full flex items-center justify-center"
+          >
+            <UserProfile
+              profile={userProfile}
+              onBack={() => {
+                setShowOwnProfile(false)
+                setShowMore(true);
+              }}
+              isOwnProfile={true}
+              onDeletePost={handleDeletePost}
+            />
+          </motion.div>
+        </MainView>
+      </div>
+    )
+  }
 
-if (showFeedback) {
-  return (
-    <div className="flex items-center justify-center min-h-screen -mt-4">
-      <MainView>
-        <Feedback
-          onBack={() => setShowFeedback(false)}
-          onSubmit={handleFeedbackSubmit}
-        />
-      </MainView>
-    </div>
-  );
-}
+  if (showFeedback) {
+    return (
+      <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
+        <MainView>
+        <motion.div
+            key="signin"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full h-full flex items-center justify-center"
+          >
+            <Feedback
+              onBack={() => {
+                setShowFeedback(false)
+                setShowMore(true);
+              }}
+              onSubmit={handleFeedbackSubmit}
+            />
+          </motion.div>
+        </MainView>
+      </div>
+    );
+  }
 
     return (
-        <div className="flex items-center justify-center min-h-screen -mt-4">
+        <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
   <MainView>
       <AnimatePresence mode="wait">
         {showSignIn ? (
@@ -202,39 +282,45 @@ if (showFeedback) {
                   // If not signed in, show sign in modal
                   <SignIn onSignInSuccess={() => setShowMore(false)} />
                 ) : (
-                  // If signed in, show sign out button
-                  <div className="flex flex-col items-center justify-center w-full">
+                  <div className="flex flex-col h-full w-full">
+                  {/* Back arrow at the top left */}
+                  <div className="flex items-start w-full">
+                    <button
+                      className="mb-4 mt-4 ml-2 cursor-pointer"
+                      onClick={() => setShowMore(false)}
+                      aria-label="Back to Feed"
+                    >
+                      <IoMdArrowBack size={24}/>
+                    </button>
+                  </div>
+                  {/* Other buttons centered below */}
+                  <div className="flex flex-col items-center justify-center w-full flex-1">
                     <button 
-                    className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4"
-                    onClick={() => {
-                      setShowOwnProfile(true);
-                      setShowMore(false);
-                    }}
+                      className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4 cursor-pointer"
+                      onClick={() => {
+                        setShowOwnProfile(true);
+                        setShowMore(false);
+                      }}
                     >
                       Profile
                     </button>
-                  <button 
-                    className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4"
-                    onClick={() => {
-                      setShowFeedback(true);
-                      setShowMore(false);
-                    }}
-                  >
-                    Give Feedback
-                  </button>
+                    <button 
+                      className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4 cursor-pointer"
+                      onClick={() => {
+                        setShowFeedback(true);
+                        setShowMore(false);
+                      }}
+                    >
+                      Give Feedback
+                    </button>
                     <button
                       onClick={handleSignOut}
-                      className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4"
+                      className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4 cursor-pointer"
                     >
                       Sign Out
                     </button>
-                    <button
-                      onClick={() => setShowMore(false)}
-                      className="mt-2 text-sm text-[#9C9191] underline"
-                    >
-                      Cancel
-                    </button>
                   </div>
+                </div>
                 )}
               </motion.div>
             ) : isExpressing ? (
@@ -256,9 +342,18 @@ if (showFeedback) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
             className="w-full h-full flex flex-col items-center justify-center"
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            onDragEnd={(event, info) => {
+              if (info.offset.y < -50 && currentIndex < posts.length - 1) {
+                setCurrentIndex(currentIndex + 1); // Swipe up: next post
+              } else if (info.offset.y > 50 && currentIndex > 0) {
+                setCurrentIndex(currentIndex - 1); // Swipe down: previous post
+              }
+            }}
           >
             {/* Post Content */}
-            <div className="flex-grow flex items-center justify-center flex-col">
+            <div className="flex-grow flex items-center justify-center flex-col px-4">
               <h2 className="text-xl text-center">
                 {posts[currentIndex]?.content || "No posts available"}
               </h2>
@@ -315,7 +410,6 @@ if (showFeedback) {
                       ? "bg-[#8C8888]"
                       : "bg-[#BEBABA]"
                   }`}
-                  disabled={voteCooldown[posts[currentIndex]?.id]}
                 >
                   <IoMdArrowRoundUp size={18} className="mx-auto" />
                 </button>
@@ -332,7 +426,6 @@ if (showFeedback) {
                       ? "bg-[#8C8888]"
                       : "bg-[#BEBABA]"
                   }`}
-                  disabled={voteCooldown[posts[currentIndex]?.id]}
                 >
                   <IoMdArrowRoundDown size={18} className="mx-auto" />
                 </button>

@@ -7,8 +7,13 @@ export async function GET(request: Request) {
     if (!username) {
         return NextResponse.json({ available: false });
     }
-    const user = await prisma.user.findUnique({
-        where: { username: username.toLowerCase () },
+    const user = await prisma.user.findFirst({
+        where: { 
+            username: {
+                equals: username,
+                mode: "insensitive"
+            }
+         },
         select: { id: true },
     });
     return NextResponse.json({ available: !user });

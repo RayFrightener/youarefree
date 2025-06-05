@@ -36,5 +36,9 @@ export async function GET() {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(user);
+    // Calculate karma: sum of positive scores from user's posts
+const karma = user.posts.reduce((sum, post) => {
+    return sum + (post.score > 0 ? post.score : 0);
+}, 0);
+    return NextResponse.json({...user, karma});
 }

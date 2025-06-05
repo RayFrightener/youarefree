@@ -14,10 +14,10 @@ export async function POST(request: Request) {
   }
 
   // Check if username is already taken
-  const existing = await prisma.user.findUnique({
-    where: { username: username.toLowerCase() },
-    select: { id: true },
-  });
+    const existing = await prisma.user.findFirst({
+      where: { username: { equals: username, mode: "insensitive" } },
+      select: { id: true },
+    });
   if (existing) {
     return NextResponse.json({ error: "Username already taken" }, { status: 409 });
   }
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   // Update the user's username
   await prisma.user.update({
     where: { email: session.user.email },
-    data: { username: username.toLowerCase() },
+    data: { username },
   });
 
   return NextResponse.json({ success: true });

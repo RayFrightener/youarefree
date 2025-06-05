@@ -22,6 +22,16 @@ export default function UsernameSetupModal({ onBack, onSubmit }) {
   const [error, setError] = useState("");
   const [suggestion, setSuggestion] = useState("");
 
+  function containsBannedWords(input) {
+    const bannedWords = new Set([
+      "shit", "fuck", "bitch", "hate", "racist", "slur", "kill", "nazi", "rape", "porn", "pussy", "dick", "cock", "vagina", "penis", "boobs", "tits", "nipple", "ass", "butt", "cum", "ejaculate", "orgasm", "anal", "sex", "horny", "bang", "nude", "nudes", "naked", "thong", "fetish", "bastard", "asshole", "dumb", "stupid", "retard", "idiot", "crap", "damn", "fucking", "fucked", "murder", "suicide", "hang", "die", "stab", "shoot", "gun", "bomb", "explode", "terrorist", "chink", "nigger", "faggot", "kike", "tranny", "whore", "slut",
+      // Add impersonation/role words for usernames:
+      "admin", "administrator", "mod", "moderator", "support", "staff", "owner", "official"
+    ]);
+    // For usernames, check the whole string (not just word-by-word)
+    const lower = input.toLowerCase();
+    return Array.from(bannedWords).some(bad => lower.includes(bad));
+  }
   useEffect(() => {
     setSuggestion(
       usernameSuggestions[Math.floor(Math.random() * usernameSuggestions.length)]
@@ -36,7 +46,7 @@ export default function UsernameSetupModal({ onBack, onSubmit }) {
   }, [error]);
 
   const handleSubmit = async () => {
-    const trimmed = username.trim().toLowerCase();
+    const trimmed = username.trim()
 
     if (trimmed.length < MIN_LENGTH) {
       setError("Username must be at least 4 characters.");
@@ -49,6 +59,10 @@ export default function UsernameSetupModal({ onBack, onSubmit }) {
     if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
       setError("Only letters, numbers, and underscores are allowed.");
       return;
+    }
+      if (containsBannedWords(trimmed)) {
+    setError("This username contains inappropriate or reserved words.");
+    return;
     }
 
     //check if username is taken
