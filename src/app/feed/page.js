@@ -342,8 +342,6 @@ export default function Feed() {
             transition={{ duration: 0.5 }}
             className="w-full h-full flex flex-col items-center justify-center"
           >
-            <div className="relative w-full max-w-md mx-auto rounded-2xl bg-white shadow-lg flex flex-col min-h-[70vh]">
-
             <motion.div
             className="flex-grow flex items-center justify-center flex-col px-4"
             drag="y"
@@ -395,7 +393,7 @@ export default function Feed() {
             
             {/* Buttons */}
             <div className="fixed bottom-0 left-0 w-full px-2 sm:px-8 pb-4 pt-2 z-20">
-              <div className="max-w-md mx-auto flex flex-row gap-4 w-full px-2 sm:px-4">
+              <div className="max-w-md mx-auto flex flex-row gap-4 w-full px-2 sm:px-4 mb-4">
                 {/* Toggle Sort Button */}
                 <button
                   onClick={toggleSort}
@@ -444,7 +442,6 @@ export default function Feed() {
                 >
                   Express
                 </button>
-              </div>
               </div>
               </div>
           </motion.div>
