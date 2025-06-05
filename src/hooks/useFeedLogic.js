@@ -120,11 +120,16 @@ export function useExpressionSubmission(fetchPosts) {
  * Returns votes state, voteCooldown state, and the handleVote function.
  */
 export function useVote(votes, setVotes) {
-  const [voteCooldown, setVoteCooldown] = useState({});
   // Handles voting on a post (upvote/downvote)
   const handleVote = async (postId, value) => {
-    if (voteCooldown[postId]) return;
-    setVoteCooldown((prev) => ({ ...prev, [postId]: true }));
+    // Save previous vote for possible revert
+    const prevVote = votes[postId];
+
+    // Optimistically update UI
+    setVotes((prev) => ({
+      ...prev,
+      [postId]: prev[postId] === value ? 0 : value,
+    }));
 
     try {
       const res = await fetch("/api/votes", {
@@ -132,25 +137,25 @@ export function useVote(votes, setVotes) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ postId, value }),
       });
-      if (res.ok) {
+      if (!res.ok) {
+        // Revert if backend fails
         setVotes((prev) => ({
           ...prev,
-          [postId]: prev[postId] === value ? 0 : value,
+          [postId]: prevVote,
         }));
-      } else {
         alert("Failed to vote");
       }
     } catch (error) {
+      setVotes((prev) => ({
+        ...prev,
+        [postId]: prevVote,
+      }));
       console.error("Error voting:", error);
       alert("Error voting");
-    } finally {
-      setTimeout(() => {
-        setVoteCooldown((prev) => ({ ...prev, [postId]: false }));
-      }, 1000);
     }
   };
 
-  return { votes, setVotes, voteCooldown, setVoteCooldown, handleVote };
+  return { votes, setVotes, handleVote };
 }
 
 export function useFlag() {
