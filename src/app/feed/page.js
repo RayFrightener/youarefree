@@ -342,18 +342,20 @@ export default function Feed() {
             transition={{ duration: 0.5 }}
             className="w-full h-full flex flex-col items-center justify-center"
           >
+            <div className="relative w-full max-w-md mx-auto rounded-2xl bg-white shadow-lg flex flex-col min-h-[70vh]">
+
             <motion.div
-    className="flex-grow flex items-center justify-center flex-col px-4"
-    drag="y"
-    dragConstraints={{ top: 0, bottom: 0 }}
-    onDragEnd={(event, info) => {
-      if (info.offset.y < -50 && currentIndex < posts.length - 1) {
-        setCurrentIndex(currentIndex + 1); // Swipe up: next post
-      } else if (info.offset.y > 50 && currentIndex > 0) {
-        setCurrentIndex(currentIndex - 1); // Swipe down: previous post
-      }
-    }}
-  >
+            className="flex-grow flex items-center justify-center flex-col px-4"
+            drag="y"
+            dragConstraints={{ top: 0, bottom: 0 }}
+            onDragEnd={(event, info) => {
+              if (info.offset.y < -50 && currentIndex < posts.length - 1) {
+                setCurrentIndex(currentIndex + 1); // Swipe up: next post
+              } else if (info.offset.y > 50 && currentIndex > 0) {
+                setCurrentIndex(currentIndex - 1); // Swipe down: previous post
+              }
+            }}
+          >
             {/* Post Content */}
             <div className="flex-grow flex items-center justify-center flex-col px-4">
               <h2 className="text-xl text-center">
@@ -390,9 +392,10 @@ export default function Feed() {
               )}
             </div>
             </motion.div>
+            
             {/* Buttons */}
             <div className="fixed bottom-0 left-0 w-full px-2 sm:px-8 pb-4 pt-2 z-20">
-              <div className="max-w-md mx-auto flex flex-row gap-4 w-full">
+              <div className="max-w-md mx-auto flex flex-row gap-4 w-full px-2 sm:px-4">
                 {/* Toggle Sort Button */}
                 <button
                   onClick={toggleSort}
@@ -442,11 +445,14 @@ export default function Feed() {
                   Express
                 </button>
               </div>
-            </div>
+              </div>
+              </div>
           </motion.div>
         )}
       </AnimatePresence>
+      
     </MainView>
+    
     </div>
     );
 }
