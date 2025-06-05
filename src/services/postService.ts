@@ -37,8 +37,9 @@ export async function getPosts(sort: string, userId?: string) {
         },
     });
 
-    // Add currentUserVote to each post
-    return posts.map(post => ({
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return posts.map((post: {votes?: { voteType: number }[];[key: string]: any;
+    }) => ({
         ...post,
         currentUserVote: post.votes?.[0]?.voteType ?? 0,
         votes: undefined, // Remove raw votes array from response
