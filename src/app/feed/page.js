@@ -391,7 +391,7 @@ export default function Feed() {
             </div>
             </motion.div>
             {/* Buttons */}
-            <div className="w-full px-2 sm:px-8 m-4">
+            <div className="fixed bottom-0 left-0 w-full px-2 sm:px-8 pb-4 pt-2 z-20">
               <div className="max-w-md mx-auto flex flex-row gap-4 w-full">
                 {/* Toggle Sort Button */}
                 <button
