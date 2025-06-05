@@ -3,7 +3,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { softDeletePost } from "@/services/deletePostService";
 
-export async function POST(request: Request, { params }: { params: { postId: string } }) {
+export async function POST(request: Request, context: { params: { postId: string } }) {
+    const { params } = context;
     const session = await auth();
     if (!session?.user?.email) {
         return NextResponse.json({error: "Unauthorized"}, { status: 401 });
