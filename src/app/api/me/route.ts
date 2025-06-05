@@ -37,7 +37,7 @@ export async function GET() {
     }
 
     // Calculate karma: sum of positive scores from user's posts
-const karma = user.posts.reduce((sum, post) => {
+const karma = user.posts.reduce((sum: number, post: { score: number }) => {
     return sum + (post.score > 0 ? post.score : 0);
 }, 0);
     return NextResponse.json({...user, karma});
