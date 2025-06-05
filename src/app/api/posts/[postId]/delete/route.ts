@@ -26,7 +26,7 @@ export async function POST(request: Request, { params }: { params: { postId: str
     try {
         await softDeletePost(postId, user.id);
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to delete post" }, { status: 500 });
     }
 }

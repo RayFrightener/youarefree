@@ -49,7 +49,6 @@ export default function Feed() {
     //extracted logic
           const {
         posts,
-        setPosts,
         sort,
         setSort,
         votes,
@@ -104,7 +103,7 @@ export default function Feed() {
           setShowCodeOfHonor(true);
         }
       }
-    }, [session, userProfile, showCodeOfHonor, showUsernameSetup]);
+    }, [session, userProfile, showCodeOfHonor, showUsernameSetup, setUserProfile]);
 
   // Prevent rendering until session status is determined
   if (status === "loading") {
