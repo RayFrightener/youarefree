@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { getUserProfileWithPosts } from "@/services/userService";
-
-export async function GET(
-    request: Request,
-    { params }: { params: { username: string } }
-) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function GET(request: Request, context: any) {
+    const { params } = context;
     const { username } = await params;
     if (!username) {
         return NextResponse.json({ error: "Username required" }, { status: 400 });
