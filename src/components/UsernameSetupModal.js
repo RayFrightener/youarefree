@@ -77,9 +77,9 @@ export default function UsernameSetupModal({ onBack, onSubmit }) {
   };
 
   return (
-    <div className="flex flex-col justify-between h-full w-full">
+    <div className="flex flex-col justify-between h-full w-full px-2 sm:px-4">
       <div className="flex flex-col items-start">
-        <button className="mb-4 mt-4 ml-2" onClick={onBack}>
+        <button className="mb-4 mt-4 ml-2 cursor-pointer" onClick={onBack}>
           <IoMdArrowBack size={24} />
         </button>
         <h2 className="text-lg font-semibold mb-2 ml-2">Choose your username</h2>
