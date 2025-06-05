@@ -75,10 +75,13 @@ export async function POST (request: Request) {
             const post = await createPost(content, user.id);
             return NextResponse.json(post, { status: 201 });
         } catch (err) {
-            if (err.cooldown) {
-                return NextResponse.json({
-                    error: `Please wait ${Math.floor(err.secondsLeft / 60)}m ${err.secondsLeft % 60}s before posting again.`
-                }, { status: 429 });
+            if (typeof err === "object" && err !== null && "cooldown" in err) {
+                const cooldownErr = err as { cooldown: boolean; secondsLeft: number };
+                if (cooldownErr.cooldown) {
+                    return NextResponse.json({
+                        error: `Please wait ${Math.floor(cooldownErr.secondsLeft / 60)}m ${cooldownErr.secondsLeft % 60}s before posting again.`
+                    }, { status: 429 });
+                }
             }
             throw err;
         }
