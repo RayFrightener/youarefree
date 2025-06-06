@@ -222,13 +222,6 @@ export default function Feed() {
                 setShowOwnProfile(false)
                 setShowMore(true);
               }}
-              onClick={async () => {
-              const res = await fetch("/api/me");
-              const data = await res.json();
-              setUserProfile(data);
-              setShowOwnProfile(true);
-              setShowMore(false);
-            }}
               isOwnProfile={true}
               onDeletePost={handleDeletePost}
             />
@@ -312,7 +305,10 @@ export default function Feed() {
                   <div className="flex flex-col items-center justify-center w-full flex-1">
                     <button 
                       className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4 cursor-pointer"
-                      onClick={() => {
+                      onClick={async () => {
+                        const res = await fetch("/api/me");
+                        const data = await res.json();
+                        setUserProfile(data);
                         setShowOwnProfile(true);
                         setShowMore(false);
                       }}
