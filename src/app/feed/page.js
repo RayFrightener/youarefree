@@ -222,6 +222,13 @@ export default function Feed() {
                 setShowOwnProfile(false)
                 setShowMore(true);
               }}
+              onClick={async () => {
+              const res = await fetch("/api/me");
+              const data = await res.json();
+              setUserProfile(data);
+              setShowOwnProfile(true);
+              setShowMore(false);
+            }}
               isOwnProfile={true}
               onDeletePost={handleDeletePost}
             />
