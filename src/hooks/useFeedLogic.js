@@ -22,7 +22,7 @@ import { useCallback } from "react";
 
 export function usePosts() {
   const [posts, setPosts] = useState([]);
-  const [sort, setSort] = useState("newest");
+  const [sort, setSort] = useState("highest");
   const [votes, setVotes] = useState({});
 
   const fetchPosts = useCallback(async () => {
