@@ -264,9 +264,14 @@ export default function Feed() {
             transition={{ duration: 0.5 }}
             className="w-full h-full flex items-center justify-center"
           >
-            <SignIn
-              onSignInSuccess={() => setShowSignIn(false)} // Callback to hide SignIn
-            />
+            <div className="flex flex-col items-center w-full">
+            <SignIn onSignInSuccess={() => setShowSignIn(false)} />
+            {userProfile && !userProfile.username && (
+            <p className="text-xs text-gray-500 text-center mt-6 max-w-xs">
+              Please know that by signing in, you’ll receive a welcome email and occasional updates from Unbound. We’ll keep it thoughtful and rare — just like the space itself.
+            </p>
+          )}
+          </div>
           </motion.div>
         ) : showMore ? (
               <motion.div
