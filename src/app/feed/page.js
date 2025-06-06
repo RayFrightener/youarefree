@@ -59,7 +59,12 @@ export default function Feed() {
     const { userProfile, setUserProfile, handleDeletePost } = useDeletePost(fetchPosts);
     const {
             handleVote
-        } = useVote(votes, setVotes);
+        } = useVote(votes, setVotes, {
+          showOwnProfile,
+        setUserProfile,
+        selectedUserProfile,
+        setSelectedUserProfile,
+        });
     const { flaggedPosts, flagNotification, handleFlagPosts } = useFlag();
     const { handleFeedbackSubmit } = useFeedback();
     const { handleInteraction } = useInteraction({
@@ -401,7 +406,10 @@ export default function Feed() {
               <div className="max-w-md mx-auto flex flex-row gap-4 w-full px-2 sm:px-4 mb-4">
                 {/* Toggle Sort Button */}
                 <button
-                  onClick={toggleSort}
+                  onClick={() => {
+                    toggleSort();
+                    setCurrentIndex(0);
+                  }}
                   className="flex-1 px-4 py-1 rounded-lg bg-[#BEBABA] text-center cursor-pointer"
                 >
                   {sort === "newest" ? "Uplifting" : "Newest"}

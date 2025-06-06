@@ -39,7 +39,7 @@ export async function sendWelcomeEmail(toEmail) {
       </p>
 
       <p>
-        → <a href="https://iamtruth.me/feed" style="color: #0070f3; text-decoration: none;">Visit the Feed</a>
+        → <a href="https://iamtruth.me/feed" style="color: #0070f3; text-decoration: none;">Visit the space</a>
       </p>
 
       <p style="margin-top: 2rem;">Sincerely,<br><strong>Unbound</strong></p>

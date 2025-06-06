@@ -119,7 +119,9 @@ export function useExpressionSubmission(fetchPosts) {
  * Custom hook to manage voting logic for posts.
  * Returns votes state, voteCooldown state, and the handleVote function.
  */
-export function useVote(votes, setVotes) {
+export function useVote(votes, setVotes, options = {}) {  
+  const { showOwnProfile, setUserProfile, selectedUserProfile, setSelectedUserProfile } = options;
+
   // Handles voting on a post (upvote/downvote)
   const handleVote = async (postId, value) => {
     // Save previous vote for possible revert
@@ -144,6 +146,20 @@ export function useVote(votes, setVotes) {
           [postId]: prevVote,
         }));
         alert("Failed to vote");
+      }
+      else {
+        // Refetch own profile if open
+        if (showOwnProfile && setUserProfile) {
+          fetch("/api/me")
+            .then((res) => res.json())
+            .then((data) => setUserProfile(data));
+        }
+        // Refetch selected user profile if open
+        if (selectedUserProfile && setSelectedUserProfile) {
+          fetch(`/api/user/${selectedUserProfile.username}`)
+            .then((res) => res.json())
+            .then((data) => setSelectedUserProfile(data));
+        }
       }
     } catch (error) {
       setVotes((prev) => ({
