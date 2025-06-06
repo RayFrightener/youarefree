@@ -272,10 +272,9 @@ export default function Feed() {
             <div className="flex flex-col items-center w-full">
             <SignIn onSignInSuccess={() => setShowSignIn(false)} />
             
-            <p className="text-xs text-gray-400 text-center mt-6 max-w-xs">
-            By signing in, you'll receive a warm welcome and rare, thoughtful updates from Unbound.
-            </p>
-
+           <p className="text-xs text-gray-400 text-center mt-6 max-w-xs">
+        By signing in, you’ll receive a welcome email and rare updates from Unbound.
+          </p>
           </div>
           </motion.div>
         ) : showMore ? (
