@@ -271,11 +271,11 @@ export default function Feed() {
           >
             <div className="flex flex-col items-center w-full">
             <SignIn onSignInSuccess={() => setShowSignIn(false)} />
-            {userProfile && !userProfile.username && (
-            <p className="text-xs text-gray-500 text-center mt-6 max-w-xs">
-              Please know that by signing in, you’ll receive a welcome email and occasional updates from Unbound. We’ll keep it thoughtful and rare — just like the space itself.
+            
+            <p className="text-xs text-gray-400 text-center mt-6 max-w-xs">
+            By signing in, you'll receive a warm welcome and rare, thoughtful updates from Unbound.
             </p>
-          )}
+
           </div>
           </motion.div>
         ) : showMore ? (
@@ -367,7 +367,7 @@ export default function Feed() {
             {/* Post Content */}
             <div className="flex-grow flex items-center justify-center flex-col px-4">
               <h2 className="text-xl text-center">
-                {posts[currentIndex]?.content || "No posts available"}
+                {posts[currentIndex]?.content || "Expressing..."}
               </h2>
               {posts[currentIndex]?.user?.username && (
                 <div className="mt-2 text-sm text-[#8C8888] relative w-full max-w-sm flex items-center justify-center">

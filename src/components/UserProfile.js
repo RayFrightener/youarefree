@@ -21,7 +21,8 @@ export default function UserProfile({ profile, onBack, isOwnProfile = false, onD
                 {/* Posts */}
                 <div className="flex-1 overflow-y-auto space-y-4 px-2 pb-4">
                     {posts.length === 0 ? (
-                    <div className="text-center text-[#888] mt-8">No posts yet.</div>
+                    <div className="text-center text-[#888] mt-8">  This space is quiet for now — expressions will show up once they’ve received some upliftment.
+                    </div>
                     ) : (
                         posts.map((post) => (
                         <div

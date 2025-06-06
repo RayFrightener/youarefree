@@ -26,7 +26,6 @@ export async function getUserProfileWithPosts(username: string, sort: "newest" |
     if (!user) return null;
 
     const posts = Array.isArray(user.posts) ? user.posts: [];
-
     const karma = posts.reduce((sum: number, post: { score: number}) => sum + post.score, 0);
 
     return {
