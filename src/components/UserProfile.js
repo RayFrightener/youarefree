@@ -35,7 +35,7 @@ export default function UserProfile({ profile, onBack, isOwnProfile = false, onD
                             {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                             <span className="font-mono">
-                            +{post.score} upvotes
+                            {post.score > 0 ? `+${post.score}` : post.score} upvotes
                             </span>
                             { isOwnProfile && (
                                 <button
