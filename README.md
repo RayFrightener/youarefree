@@ -7,7 +7,6 @@
 Read, reflect and get uplifted and leave enriched to take on life with all fear removed and in a state to live freely.
 Come, Wake up and leave all ready to live life freely.
 
-## Demo
 
 ![Unbound Demo](https://pranshublog-rho.vercel.app/unboundtry2.gif)
 
