@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 
 //**
 // import { useState, useEffect } from "react";
@@ -33,7 +33,7 @@ export function usePosts() {
 
       // Build votes state from fetched posts
       const votesObj = {};
-      data.forEach(post => {
+      data.forEach((post) => {
         votesObj[post.id] = post.currentUserVote || 0;
       });
       setVotes(votesObj);
@@ -49,18 +49,21 @@ export function usePosts() {
   return { posts, setPosts, sort, setSort, votes, setVotes, fetchPosts };
 }
 
-
 export function useOwnProfile(showOwnProfile, userProfile, setUserProfile) {
   useEffect(() => {
     if (showOwnProfile && !userProfile) {
       fetch("/api/me")
-        .then(res => res.json())
-        .then(data => setUserProfile(data));
+        .then((res) => res.json())
+        .then((data) => setUserProfile(data));
     }
   }, [showOwnProfile, userProfile, setUserProfile]);
 }
 
-export function useKeyboardNavigation(currentIndex, setCurrentIndex, postsLength) {
+export function useKeyboardNavigation(
+  currentIndex,
+  setCurrentIndex,
+  postsLength
+) {
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === "ArrowDown") {
@@ -81,7 +84,78 @@ export function useKeyboardNavigation(currentIndex, setCurrentIndex, postsLength
     };
   }, [currentIndex, setCurrentIndex, postsLength]);
 }
+/**
+ * Custom hook to handle mouse wheel scrolling through posts with a debounce mechanism
+ * to prevent rapid cycling through posts.
+ */
+export function useMouseWheelNavigation(
+  currentIndex,
+  setCurrentIndex,
+  postsLength
+) {
+  const [isScrolling, setIsScrolling] = useState(false);
+  // Add a ref to track the last processed index to prevent duplicates
+  const lastProcessedIndex = useRef(currentIndex);
 
+  useEffect(() => {
+    // Cooldown period in milliseconds
+    const scrollCooldown = 1600;
+    let scrollTimeout = null;
+
+    const handleWheel = (event) => {
+      // Prevent default behavior while we're handling the navigation
+      event.preventDefault();
+
+      // Skip if currently in cooldown
+      if (isScrolling) return;
+
+      // Check if we've already processed this index
+      if (lastProcessedIndex.current === currentIndex) {
+        // Determine direction (positive = scroll down, negative = scroll up)
+        const direction = event.deltaY > 0 ? 1 : -1;
+
+        // Calculate new index with bounds checking
+        const newIndex = Math.max(
+          0,
+          Math.min(postsLength - 1, currentIndex + direction)
+        );
+
+        // Only proceed if we're actually changing the index
+        if (newIndex !== currentIndex) {
+          // Update our ref to prevent duplicate processing
+          lastProcessedIndex.current = newIndex;
+
+          // Update the state to change the displayed post
+          setCurrentIndex(newIndex);
+
+          // Set scrolling lock
+          setIsScrolling(true);
+
+          // Clear any existing timeout
+          if (scrollTimeout) clearTimeout(scrollTimeout);
+
+          // Set new timeout
+          scrollTimeout = setTimeout(() => {
+            setIsScrolling(false);
+          }, scrollCooldown);
+        }
+      }
+    };
+
+    // Update the ref whenever currentIndex changes
+    lastProcessedIndex.current = currentIndex;
+
+    // Use passive: false to allow preventDefault
+    window.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+    };
+  }, [currentIndex, setCurrentIndex, postsLength, isScrolling]);
+
+  return { isScrolling };
+}
 /**
  * Custom hook to manage expression submission logic.
  * Returns isExpressing state, setIsExpressing, and the handler function.
@@ -114,13 +188,17 @@ export function useExpressionSubmission(fetchPosts) {
   return { isExpressing, setIsExpressing, handleExpressionSubmission };
 }
 
-
 /**
  * Custom hook to manage voting logic for posts.
  * Returns votes state, voteCooldown state, and the handleVote function.
  */
-export function useVote(votes, setVotes, options = {}) {  
-  const { showOwnProfile, setUserProfile, selectedUserProfile, setSelectedUserProfile } = options;
+export function useVote(votes, setVotes, options = {}) {
+  const {
+    showOwnProfile,
+    setUserProfile,
+    selectedUserProfile,
+    setSelectedUserProfile,
+  } = options;
 
   // Handles voting on a post (upvote/downvote)
   const handleVote = async (postId, value) => {
@@ -146,8 +224,7 @@ export function useVote(votes, setVotes, options = {}) {
           [postId]: prevVote,
         }));
         alert("Failed to vote");
-      }
-      else {
+      } else {
         // Refetch own profile if open
         if (showOwnProfile && setUserProfile) {
           fetch("/api/me")
@@ -175,32 +252,32 @@ export function useVote(votes, setVotes, options = {}) {
 }
 
 export function useFlag() {
-    const [flaggedPosts, setFlaggedPosts] = useState({});
-    const [flagNotification, setFlagNotification] = useState("");
-    const handleFlagPosts = async (postId) => {
+  const [flaggedPosts, setFlaggedPosts] = useState({});
+  const [flagNotification, setFlagNotification] = useState("");
+  const handleFlagPosts = async (postId) => {
+    const res = await fetch("/api/flag", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId }),
+    });
 
-      const res = await fetch("/api/flag", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId }), 
-      });
-
-      const data = await res.json();
-      if ( res.ok) {
-        setFlaggedPosts( prev => ({
-          ...prev, [postId]: data.flagged
-        }));
-        setFlagNotification(
-          data.flagged 
+    const data = await res.json();
+    if (res.ok) {
+      setFlaggedPosts((prev) => ({
+        ...prev,
+        [postId]: data.flagged,
+      }));
+      setFlagNotification(
+        data.flagged
           ? "You have successfully flagged this post. Thank you!"
           : "You have successfully un-flagged this post. Thank you!"
-        );
-        setTimeout(() => setFlagNotification(""), 3000);
-      } else {
-        setFlagNotification(data.error || "Failed to flag post.");
-        setTimeout(() => setFlagNotification(""), 3000)
-      }
-    };
+      );
+      setTimeout(() => setFlagNotification(""), 3000);
+    } else {
+      setFlagNotification(data.error || "Failed to flag post.");
+      setTimeout(() => setFlagNotification(""), 3000);
+    }
+  };
   return { flaggedPosts, flagNotification, handleFlagPosts };
 }
 /**
@@ -209,21 +286,21 @@ export function useFlag() {
  * Call with fetchPosts to refresh posts after deletion.
  */
 export function useDeletePost(fetchPosts) {
-     const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
 
-      const handleDeletePost = async (postId) => {
-      const res = await fetch(`/api/posts/${postId}/delete`, { method: "POST" });
-      if (res.ok) {
-        setUserProfile((prev) => ({
-          ...prev,
-          posts: prev.posts.filter(post => post.id !== postId)
-        }));
-        fetchPosts(); 
-      } else {
-        alert("Failed to delete post.");
-      }
-    };
-    return { userProfile, setUserProfile, handleDeletePost}
+  const handleDeletePost = async (postId) => {
+    const res = await fetch(`/api/posts/${postId}/delete`, { method: "POST" });
+    if (res.ok) {
+      setUserProfile((prev) => ({
+        ...prev,
+        posts: prev.posts.filter((post) => post.id !== postId),
+      }));
+      fetchPosts();
+    } else {
+      alert("Failed to delete post.");
+    }
+  };
+  return { userProfile, setUserProfile, handleDeletePost };
 }
 
 /**
@@ -231,27 +308,33 @@ export function useDeletePost(fetchPosts) {
  * Returns a function that sends feedback to the backend and returns any error message.
  */
 export function useFeedback() {
-    const handleFeedbackSubmit = async (category, message) => {
-      const res = await fetch("/api/feedback", {
-        method: "POST",
-        headers: { "Content-type": "applications/json"},
-        body: JSON.stringify({ category, message }),
-      });
+  const handleFeedbackSubmit = async (category, message) => {
+    const res = await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-type": "applications/json" },
+      body: JSON.stringify({ category, message }),
+    });
 
-      if(!res.ok) {
-        const data = await res.json();
-        return data.error || "Failed to send feedback";
-      }
-      return null;
-    };
-    return { handleFeedbackSubmit };
+    if (!res.ok) {
+      const data = await res.json();
+      return data.error || "Failed to send feedback";
+    }
+    return null;
+  };
+  return { handleFeedbackSubmit };
 }
 
 /**
  * Custom hook to handle user interaction that requires authentication and username setup.
  * Returns a function that wraps an action and ensures the user is signed in and has a username.
  */
-export function useInteraction({ session, setShowSignIn, userProfile, setUserProfile, setShowCodeOfHonor }) {
+export function useInteraction({
+  session,
+  setShowSignIn,
+  userProfile,
+  setUserProfile,
+  setShowCodeOfHonor,
+}) {
   /**
    * Wraps an action to ensure the user is authenticated and has a username.
    * If not authenticated, shows sign-in. If no username, shows Code of Honor modal.
@@ -290,15 +373,18 @@ export function useUserProfileClick(setSelectedUserProfile) {
    * Fetches the user profile by username and updates the selectedUserProfile state.
    * Alerts if the user is not found.
    */
-  const handleUserClick = useCallback(async (username) => {
-    const res = await fetch(`/api/user/${username}`);
-    if (res.ok) {
-      const data = await res.json();
-      setSelectedUserProfile(data);
-    } else {
-      alert("User not found");
-    }
-  }, [setSelectedUserProfile]);
+  const handleUserClick = useCallback(
+    async (username) => {
+      const res = await fetch(`/api/user/${username}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedUserProfile(data);
+      } else {
+        alert("User not found");
+      }
+    },
+    [setSelectedUserProfile]
+  );
 
   return { handleUserClick };
 }
