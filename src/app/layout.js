@@ -2,6 +2,7 @@ import "./globals.css";
 import Header from "../components/Header";
 import SessionProviderWrapper from "../components/SessionProviderWrapper";
 import { ModalProvider } from "../context/ModalContext";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
   title: "Unbound",
@@ -18,6 +19,7 @@ export default function RootLayout({ children }) {
             {children}
           </ModalProvider>
         </SessionProviderWrapper>
+        <Analytics />
       </body>
     </html>
   );

@@ -103,7 +103,31 @@ export function useMouseWheelNavigation(
     let scrollTimeout = null;
 
     const handleWheel = (event) => {
-      // Prevent default behavior while we're handling the navigation
+      // Check if the scroll is happening inside a scrollable element
+      let target = event.target;
+      let isScrollable = false;
+
+      // Walk up the DOM tree to check if we're inside a scrollable container
+      while (target && target !== document.body) {
+        const overflowY = window.getComputedStyle(target).overflowY;
+        const hasScrollableContent = target.scrollHeight > target.clientHeight;
+
+        if (
+          (overflowY === "auto" || overflowY === "scroll") &&
+          hasScrollableContent
+        ) {
+          isScrollable = true;
+          break;
+        }
+        target = target.parentElement;
+      }
+
+      // If we're scrolling inside a scrollable element, allow normal scroll behavior
+      if (isScrollable) {
+        return; // Let the browser handle scrolling normally
+      }
+
+      // Prevent default behavior only when NOT in a scrollable container
       event.preventDefault();
 
       // Skip if currently in cooldown
