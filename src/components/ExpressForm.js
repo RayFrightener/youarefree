@@ -1,5 +1,5 @@
 /**
- * render little back arrow, input box and keep the express button from the feed? 
+ * render little back arrow, input box and keep the express button from the feed?
  * use react
  * import icon
  * create the react component function
@@ -21,16 +21,16 @@
  *      return
  * if expression length more than 150
  *  set error
- *  return 
+ *  return
  * else
  * setError empty
  * onSubmit(expression)
- * 
- * show character count? 
- * how? and what? 
+ *
+ * show character count?
+ * how? and what?
  * while user is typing we want to show a span below it that shows the character count /150
- * 
- * 
+ *
+ *
  */
 
 import { IoMdArrowBack } from "react-icons/io";
@@ -39,86 +39,155 @@ import { useState, useEffect } from "react";
 const MAX_LENGTH = 150;
 
 export default function ExpressForm({ onBack, onSubmit }) {
-    const [expression, setExpression] = useState("");
-    const [error, setError] = useState("");
-    
-    /** watch time for error and for it to go away
-     * useEffect and within 
-     * if error 
-     * time
-     */
-    useEffect(() => {
-        if (error) {
-            const timer = setTimeout(() => setError(""), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [error]);
-    
-    function containsBannedWords(input) {
-    const bannedWords = new Set(["shit", "fuck", "bitch", "hate", "racist", "slur", "kill", "nazi", "rape", "porn","pussy", "dick", "cock", "vagina", "penis", "boobs", "tits", "nipple", "ass", "butt", "cum", "ejaculate", "orgasm", "anal", "sex", "horny", "bang", "nude", "nudes", "naked", "thong", "fetish","fuck", "shit", "bitch", "bastard", "asshole", "dumb", "stupid", "retard", "idiot", "crap", "damn", "fucking", "fucked","kill", "murder", "suicide", "hang", "die", "stab", "shoot", "gun", "bomb", "explode", "terrorist","chink", "nigger", "faggot", "kike", "tranny", "whore", "slut"
-]);
+  const [expression, setExpression] = useState("");
+  const [error, setError] = useState("");
+
+  /** watch time for error and for it to go away
+   * useEffect and within
+   * if error
+   * time
+   */
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(""), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  function containsBannedWords(input) {
+    const bannedWords = new Set([
+      "shit",
+      "fuck",
+      "bitch",
+      "hate",
+      "racist",
+      "slur",
+      "kill",
+      "nazi",
+      "rape",
+      "porn",
+      "pussy",
+      "dick",
+      "cock",
+      "vagina",
+      "penis",
+      "boobs",
+      "tits",
+      "nipple",
+      "ass",
+      "butt",
+      "cum",
+      "ejaculate",
+      "orgasm",
+      "anal",
+      "sex",
+      "horny",
+      "bang",
+      "nude",
+      "nudes",
+      "naked",
+      "thong",
+      "fetish",
+      "fuck",
+      "shit",
+      "bitch",
+      "bastard",
+      "asshole",
+      "dumb",
+      "stupid",
+      "retard",
+      "idiot",
+      "crap",
+      "damn",
+      "fucking",
+      "fucked",
+      "kill",
+      "murder",
+      "suicide",
+      "hang",
+      "die",
+      "stab",
+      "shoot",
+      "gun",
+      "bomb",
+      "explode",
+      "terrorist",
+      "chink",
+      "nigger",
+      "faggot",
+      "kike",
+      "tranny",
+      "whore",
+      "slut",
+    ]);
     const words = input.toLowerCase().split(/\s+/);
-    return words.some(word => bannedWords.has(word));
-}
-    const handleSubmit = async () => {
-        const trimmed = expression.trim();
-        if (trimmed.length === 0) {
-            setError("Expression can't be empty, please express something");
-            return;
-        }
-        if (trimmed.length > MAX_LENGTH) {
-            setError("Expression too bit, please shorten it");
-            return;
-        }
-        if (containsBannedWords(trimmed)) {
-        setError("Your expression contains inappropriate language.");
-        return;
+    return words.some((word) => bannedWords.has(word));
+  }
+  const handleSubmit = async () => {
+    const trimmed = expression.trim();
+    if (trimmed.length === 0) {
+      setError("Expression can't be empty, please express something");
+      return;
     }
-        const backendError = await onSubmit(trimmed);
-        if (backendError) {
-            setError(backendError);
-        }
+    if (trimmed.length > MAX_LENGTH) {
+      setError("Expression too bit, please shorten it");
+      return;
     }
-    
-    return (
-        <div className="flex flex-col justify-between h-full w-full ">
-            {/* Top: Back button and textarea */}
-            <div className="flex flex-col items-start ">
-                <button
-                    className="mb-4 mt-4 ml-2 cursor-pointer"
-                    onClick={onBack}
-                    aria-label="Back to Feed"
-                >
-                    <IoMdArrowBack size={24}/>
-                </button>
-            <div className="w-full px-2 sm:px-4">
-                <textarea
-                    className="w-full p-2 rounded border-2 border-[#9C9191] mb-4 focus:outline-none"
-                    placeholder="Express a reflection of the truth..."
-                    value={expression}
-                    onChange={e => setExpression(e.target.value)}
-                />
-                <div className="flex justify-end w-full px-1 mb-2">
-                    <span className={`text-xs ${expression.length > MAX_LENGTH ? "text-red-500" : "text-[#9C9191]"}`}>
-                    {expression.length} / {MAX_LENGTH}
-                    </span>
-                </div>
-                {error && (
-                    <div className="flex justify-center w-full mb-2">
-                    <span className="text-sm text-red-500 text-center">{error}</span>
-                    </div>
-                )}
-                </div>
+    if (containsBannedWords(trimmed)) {
+      setError("Your expression contains inappropriate language.");
+      return;
+    }
+    const backendError = await onSubmit(trimmed);
+    if (backendError) {
+      setError(backendError);
+    }
+  };
+
+  return (
+    <div className="flex flex-col flex-1">
+      {/* Top: Back button and textarea */}
+      <div className="flex flex-col items-start ">
+        <button
+          className="mb-4 mt-4 ml-2 cursor-pointer"
+          onClick={onBack}
+          aria-label="Back to Feed"
+        >
+          <IoMdArrowBack size={24} />
+        </button>
+        <div className="w-full px-2 sm:px-4">
+          <textarea
+            className="w-full p-2 rounded border-2 border-[#9C9191] mb-4 focus:outline-none"
+            placeholder="Express a reflection of the truth..."
+            value={expression}
+            onChange={(e) => setExpression(e.target.value)}
+          />
+          <div className="flex justify-end w-full px-1 mb-2">
+            <span
+              className={`text-xs ${
+                expression.length > MAX_LENGTH
+                  ? "text-red-500"
+                  : "text-[#9C9191]"
+              }`}
+            >
+              {expression.length} / {MAX_LENGTH}
+            </span>
+          </div>
+          {error && (
+            <div className="flex justify-center w-full mb-2">
+              <span className="text-sm text-red-500 text-center">{error}</span>
             </div>
-            {/* Bottom: Express button aligned right */}
-            <div className="flex justify-end">
-                <button
-                    className="px-4 py-1 rounded-lg bg-[#BEBABA] text-center mb-6 mr-8 cursor-pointer"
-                    onClick={() => handleSubmit(expression)}
-                >
-                    Express
-                </button>
-            </div>
+          )}
         </div>
-    );
+      </div>
+      {/* Bottom: Express button aligned right */}
+      <div className="flex justify-end">
+        <button
+          className="px-4 py-1 rounded-lg bg-[#BEBABA] text-center mb-6 mr-8 cursor-pointer"
+          onClick={() => handleSubmit(expression)}
+        >
+          Express
+        </button>
+      </div>
+    </div>
+  );
 }

@@ -11,17 +11,17 @@ export default function Header() {
   if (pathname === "/") return null;
 
   return (
-    <header className="bg-[#9C9191] text-[#DCD9D9] py-1 px-1 rounded-b-lg z-50">
-      <nav className="max-w-7xl mx-auto flex justify-between items-center">
-        {/** Left: hyperlink */}
-        <a href="/feed" className="text-lg font-bold hover:underline">
+    <header className="fixed top-0 left-0 right-0 z-40 backdrop-blur-sm bg-[#1A1616]/60 border-b border-[#DCD9D9]/10">
+      <nav className="max-w-4xl mx-auto flex items-center justify-between px-5 py-3">
+        <a
+          href="/feed"
+          className="text-sm tracking-[0.4em] text-[#DCD9D9] uppercase"
+        >
           UNBOUND
         </a>
-        {/** Right: button */}
-        {/* Right: More element */}
         <button
           onClick={() => setShowMore(true)}
-          className="px-3 py-1 bg-[#DCD9D9] text-[#9C9191] rounded hover:bg-[#C7BEBE] transition cursor-pointer"
+          className="px-4 py-2 rounded-full bg-[#DCD9D9]/80 text-[#4E4A4A] text-xs uppercase tracking-[0.3em] hover:bg-[#DCD9D9] transition-colors cursor-pointer"
         >
           More
         </button>

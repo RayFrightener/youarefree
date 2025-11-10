@@ -162,7 +162,7 @@ export default function Feed() {
       </div>
     );
   }
-
+  // code of honor modal
   if (showCodeOfHonor) {
     return (
       <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
@@ -187,6 +187,7 @@ export default function Feed() {
     );
   }
 
+  // username setup modal
   if (showUsernameSetup) {
     return (
       <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
@@ -225,6 +226,7 @@ export default function Feed() {
     );
   }
 
+  // own profile modal
   if (showOwnProfile) {
     return (
       <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
@@ -252,6 +254,7 @@ export default function Feed() {
     );
   }
 
+  // feedback modal
   if (showFeedback) {
     return (
       <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
@@ -277,8 +280,10 @@ export default function Feed() {
     );
   }
 
+  // main feed
   return (
-    <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
+    <div className="flex justify-center min-h-screen pt-28 pb-12 px-4 sm:px-8">
+      {" "}
       <MainView>
         {/* Navigation Hint - shows on first visit */}
         {!showMore && !isExpressing && !selectedUserProfile && !showSignIn && (
@@ -443,54 +448,51 @@ export default function Feed() {
               </motion.div>
 
               {/* Buttons */}
-              <div className="fixed bottom-0 left-0 w-full px-2 sm:px-8 pb-4 pt-2 z-20">
-                <div className="max-w-md mx-auto flex flex-row gap-4 w-full px-2 sm:px-4 mb-4">
-                  {/* Toggle Sort Button */}
+              <div className="mt-auto pt-12">
+                <div className="flex items-center justify-between gap-6">
                   <button
                     onClick={() => {
                       toggleSort();
                       setCurrentIndex(0);
                     }}
-                    className="flex-1 px-4 py-1 rounded-lg bg-[#BEBABA] text-center cursor-pointer"
+                    className="px-4 py-2 rounded-full border border-[#BEBABA]/70 text-xs uppercase tracking-[0.2em] text-[#8C8888] hover:bg-[#BEBABA]/20 transition-colors cursor-pointer"
                   >
                     {sort === "newest" ? "Uplifting" : "Newest"}
                   </button>
 
-                  {/* Upvote Button */}
-                  <button
-                    onClick={() =>
-                      handleInteraction(() =>
-                        handleVote(posts[currentIndex]?.id, 1)
-                      )
-                    }
-                    className={`flex-1 px-4 py-1 rounded-lg cursor-pointer text-center ${
-                      votes[posts[currentIndex]?.id] === 1
-                        ? "bg-[#8C8888]"
-                        : "bg-[#BEBABA]"
-                    }`}
-                  >
-                    <IoMdArrowRoundUp size={18} className="mx-auto" />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() =>
+                        handleInteraction(() =>
+                          handleVote(posts[currentIndex]?.id, 1)
+                        )
+                      }
+                      className={`h-12 w-12 rounded-full flex items-center justify-center border border-[#BEBABA]/70 ${
+                        votes[posts[currentIndex]?.id] === 1
+                          ? "bg-[#BEBABA] text-[#4E4A4A]"
+                          : "text-[#8C8888]"
+                      }`}
+                    >
+                      <IoMdArrowRoundUp size={18} />
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleInteraction(() =>
+                          handleVote(posts[currentIndex]?.id, -1)
+                        )
+                      }
+                      className={`h-12 w-12 rounded-full flex items-center justify-center border border-[#BEBABA]/70 ${
+                        votes[posts[currentIndex]?.id] === -1
+                          ? "bg-[#BEBABA] text-[#4E4A4A]"
+                          : "text-[#8C8888]"
+                      }`}
+                    >
+                      <IoMdArrowRoundDown size={18} />
+                    </button>
+                  </div>
 
-                  {/* Downvote Button */}
                   <button
-                    onClick={() =>
-                      handleInteraction(() =>
-                        handleVote(posts[currentIndex]?.id, -1)
-                      )
-                    }
-                    className={`flex-1 px-4 py-1 rounded-lg cursor-pointer text-center ${
-                      votes[posts[currentIndex]?.id] === -1
-                        ? "bg-[#8C8888]"
-                        : "bg-[#BEBABA]"
-                    }`}
-                  >
-                    <IoMdArrowRoundDown size={18} className="mx-auto" />
-                  </button>
-
-                  {/* Express Button */}
-                  <button
-                    className="flex-1 px-4 py-1 rounded-lg bg-[#BEBABA] text-center cursor-pointer"
+                    className="px-5 py-2 rounded-full bg-[#BEBABA] text-[#4E4A4A] text-xs uppercase tracking-[0.25em] hover:bg-[#BEBABA]/90 transition-colors cursor-pointer"
                     onClick={() =>
                       handleInteraction(() => setIsExpressing(true))
                     }
