@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { IoMdArrowBack } from "react-icons/io";
+import { track } from "../lib/analytics";
 
 const categories = [
   "Feed (Browsing & Sorting)",
@@ -52,6 +53,9 @@ export default function Feedback({ onBack, onSubmit }) {
       setText(""); // Clear textarea
       setSuccess("Thank you for your feedback!"); // Show thank you message
       setTimeout(() => setSuccess(""), 3000); // Hide after 3s
+      track("feedback_submitted", {
+        metadata: { category: selected }, // Fix: use 'selected' not 'category'
+      });
     }
   };
 
@@ -104,7 +108,7 @@ export default function Feedback({ onBack, onSubmit }) {
             </label>
             <textarea
               className="w-full px-4 py-3 rounded-[24px] border-2 border-[#BEBABA]/50 bg-transparent text-[#4E4A4A] font-light leading-relaxed tracking-wide focus:outline-none focus:border-[#BEBABA] transition-all duration-300 resize-none min-h-[120px]"
-              placeholder="Please share your thoughts and suggestions..."
+              placeholder="Please select a category and share your thoughts and suggestions..."
               value={text}
               onChange={(e) => setText(e.target.value)}
               disabled={!selected}

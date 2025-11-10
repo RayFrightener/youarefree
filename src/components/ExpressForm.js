@@ -36,6 +36,7 @@
 import { IoMdArrowBack } from "react-icons/io";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { track } from "../lib/analytics";
 
 const MAX_LENGTH = 120; // Changed from 150
 
@@ -150,6 +151,7 @@ export default function ExpressForm({ onBack, onSubmit }) {
       // Success - form will be closed by parent
       setExpression("");
       setIsSubmitting(false);
+      track("post_created");
     }
   };
 

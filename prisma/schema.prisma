@@ -25,6 +25,7 @@ model User {
   updatedAt     DateTime        @updatedAt
 
   lastPostAt    DateTime?
+  lastActiveAt  DateTime?       // Track last activity
 
   posts         Post[]
   votes         Vote[]
@@ -33,6 +34,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   Authenticators Authenticator[]
+  analyticsEvents AnalyticsEvent[]  // Add this
 }
 
 model Post {
@@ -48,6 +50,7 @@ model Post {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   votes     Vote[]
   flags     Flag[]
+  analyticsEvents AnalyticsEvent[]  // Add this
 }
 
 model Vote {
@@ -138,6 +141,24 @@ model Authenticator {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, credentialID])
+}
+
+// Add this new model at the end
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  eventType String   // 'page_view', 'post_created', 'vote_cast', 'session_start', 'session_end', 'profile_view', 'feedback_submitted', etc.
+  userId    String?  // null for anonymous events
+  postId    Int?     // if event relates to a post
+  metadata  Json?    // flexible JSON for event-specific data (e.g., { sort: 'newest', voteType: 1, category: 'bug' })
+  createdAt DateTime @default(now())
+  
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+  
+  @@index([eventType])
+  @@index([userId])
+  @@index([postId])
+  @@index([createdAt])
 }
 
 

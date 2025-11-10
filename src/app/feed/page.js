@@ -36,6 +36,8 @@ import {
   useMouseWheelNavigation,
 } from "../../hooks/useFeedLogic";
 
+import { track } from "../../lib/analytics";
+
 export default function Feed() {
   const { data: session, status } = useSession();
   const [showSignIn, setShowSignIn] = useState(false);
@@ -78,9 +80,43 @@ export default function Feed() {
 
   useMouseWheelNavigation(currentIndex, setCurrentIndex, posts.length);
 
+  // Track sign in and session start
+  useEffect(() => {
+    if (session) {
+      track("sign_in");
+      track("session_start");
+    }
+  }, [session]);
+
+  // Track page view on mount
+  useEffect(() => {
+    track("page_view", {
+      metadata: { path: "/feed" },
+    });
+  }, []);
+
+  // Track profile view
+  useEffect(() => {
+    if (selectedUserProfile) {
+      track("profile_view", {
+        metadata: { username: selectedUserProfile.username },
+      });
+    }
+  }, [selectedUserProfile]);
+
+  // Track when viewing own profile
+  useEffect(() => {
+    if (showOwnProfile) {
+      track("profile_view", {
+        metadata: { ownProfile: true },
+      });
+    }
+  }, [showOwnProfile]);
+
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/feed" });
     setShowMore(false);
+    track("sign_out");
   };
   // Add this effect:
   useEffect(() => {
@@ -409,6 +445,11 @@ export default function Feed() {
                           onClick={() => {
                             toggleSort();
                             setCurrentIndex(0);
+                            track("feed_sort_changed", {
+                              metadata: {
+                                sort: sort === "newest" ? "highest" : "newest",
+                              },
+                            });
                           }}
                           className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-xs sm:text-sm uppercase tracking-[0.2em] text-[#8C8888] hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer active:scale-[0.98] font-medium whitespace-nowrap flex-shrink-0"
                         >
@@ -417,11 +458,15 @@ export default function Feed() {
 
                         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                           <button
-                            onClick={() =>
-                              handleInteraction(() =>
-                                handleVote(posts[currentIndex]?.id, 1)
-                              )
-                            }
+                            onClick={() => {
+                              handleInteraction(() => {
+                                handleVote(posts[currentIndex]?.id, 1);
+                                track("vote_cast", {
+                                  postId: posts[currentIndex]?.id,
+                                  metadata: { voteType: 1 },
+                                });
+                              });
+                            }}
                             className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer active:scale-[0.95] flex-shrink-0 ${
                               votes[posts[currentIndex]?.id] === 1
                                 ? "bg-[#BEBABA] text-[#4E4A4A] border-[#BEBABA] shadow-sm"

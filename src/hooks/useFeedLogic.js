@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useCallback, useRef } from "react";
+import { track } from "../lib/analytics";
 
 //**
 // import { useState, useEffect } from "react";
@@ -297,6 +298,12 @@ export function useFlag() {
           : "You have successfully un-flagged this post. Thank you!"
       );
       setTimeout(() => setFlagNotification(""), 3000);
+
+      // Track flag event
+      track("flag_created", {
+        postId,
+        metadata: { flagged: data.flagged },
+      });
     } else {
       setFlagNotification(data.error || "Failed to flag post.");
       setTimeout(() => setFlagNotification(""), 3000);
