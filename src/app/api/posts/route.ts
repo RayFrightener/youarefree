@@ -17,30 +17,31 @@ import { getPosts, createPost } from "@/services/postService";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url)
-    const sort = searchParams.get("sort") || "newest";
-    let userId: string | undefined = undefined;
+  const { searchParams } = new URL(request.url);
+  const sort = searchParams.get("sort") || "newest";
+  let userId: string | undefined = undefined;
 
-    try {
-        const session = await auth();
-        if (session?.user?.email) {
-            const user = await prisma.user.findUnique({
-                where: { email: session.user.email },
-                select: { id: true }
-            });
-            userId = user?.id;
-        } 
-        
-    } catch {}
-        
-    try {
-            const posts = await getPosts(sort, userId);
-            return NextResponse.json(posts);
-        }
-    catch (error) {
-        console.error("Error fetching posts: ", error);
-        return NextResponse.json({error: "failed to fetch posts" }, { status: 500 });
+  try {
+    const session = await auth();
+    if (session?.user?.email) {
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true },
+      });
+      userId = user?.id;
     }
+  } catch {}
+
+  try {
+    const posts = await getPosts(sort, userId);
+    return NextResponse.json(posts);
+  } catch (error) {
+    console.error("Error fetching posts: ", error);
+    return NextResponse.json(
+      { error: "failed to fetch posts" },
+      { status: 500 }
+    );
+  }
 }
 
 /**export async function POST, arg request: Request
@@ -48,46 +49,71 @@ export async function GET(request: Request) {
  *  get session}
  */
 //receive a post request with content in it
-export async function POST (request: Request) {
-    
-    try {
-        //retrieve session to get user's email
-        const session = await auth();
-        if (!session || !session.user?.email) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });        
-        }
-        //put request into body
-        const body = await request.json();
-        //destructure content from body
-        const { content } = body;
-        
-        //retrive user id to associate the post with 
-        const user = await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: { id: true }
-        });
-    
-        if (!user) {
-            return NextResponse.json({ error: "User not found " }, { status: 404 });
-        }
-        
-        try {
-            const post = await createPost(content, user.id);
-            return NextResponse.json(post, { status: 201 });
-        } catch (err) {
-            if (typeof err === "object" && err !== null && "cooldown" in err) {
-                const cooldownErr = err as { cooldown: boolean; secondsLeft: number };
-                if (cooldownErr.cooldown) {
-                    return NextResponse.json({
-                        error: `Please wait ${Math.floor(cooldownErr.secondsLeft / 60)}m ${cooldownErr.secondsLeft % 60}s before posting again.`
-                    }, { status: 429 });
-                }
-            }
-            throw err;
-        }
-        } catch (error) {
-            console.error("Error creating post: ", error);
-            return NextResponse.json({ error: "Failed to create a post"}, { status: 500 });
-        }
-}
+export async function POST(request: Request) {
+  try {
+    //retrieve session to get user's email
+    const session = await auth();
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    //put request into body
+    const body = await request.json();
+    //destructure content from body
+    const { content } = body;
 
+    //retrive user id to associate the post with
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { id: true, status: true, restrictedUntil: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found " }, { status: 404 });
+    }
+
+    // Check if user is banned or restricted
+    if (user.status === "banned") {
+      return NextResponse.json(
+        { error: "Your account has been banned" },
+        { status: 403 }
+      );
+    }
+
+    if (user.status === "restricted") {
+      if (user.restrictedUntil && user.restrictedUntil > new Date()) {
+        return NextResponse.json(
+          {
+            error: `You are temporarily restricted until ${user.restrictedUntil.toLocaleDateString()}`,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    try {
+      const post = await createPost(content, user.id);
+      return NextResponse.json(post, { status: 201 });
+    } catch (err) {
+      if (typeof err === "object" && err !== null && "cooldown" in err) {
+        const cooldownErr = err as { cooldown: boolean; secondsLeft: number };
+        if (cooldownErr.cooldown) {
+          return NextResponse.json(
+            {
+              error: `Please wait ${Math.floor(
+                cooldownErr.secondsLeft / 60
+              )}m ${cooldownErr.secondsLeft % 60}s before posting again.`,
+            },
+            { status: 429 }
+          );
+        }
+      }
+      throw err;
+    }
+  } catch (error) {
+    console.error("Error creating post: ", error);
+    return NextResponse.json(
+      { error: "Failed to create a post" },
+      { status: 500 }
+    );
+  }
+}

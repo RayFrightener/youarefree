@@ -14,6 +14,7 @@ interface FlaggedPost {
       id: string;
       username: string | null;
       email: string;
+      status?: string; // Added for user status
     };
   };
   flagCount: number;
@@ -98,6 +99,32 @@ interface MetricsData {
   };
 }
 
+interface UserWithStats {
+  id: string;
+  username: string | null;
+  email: string;
+  status: string;
+  flagCount: number;
+  restrictedUntil: string | null;
+  createdAt: string;
+  stats: {
+    totalPosts: number;
+    totalPostFlags: number;
+    avgPostScore: number;
+    trollScore: number;
+    isTroll: boolean;
+  };
+}
+
+interface UsersData {
+  users: UserWithStats[];
+  activeUsers: UserWithStats[];
+  restrictedUsers: UserWithStats[];
+  bannedUsers: UserWithStats[];
+  trolls: UserWithStats[];
+  totalUsers: number;
+}
+
 export default function AnalyticsDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -111,6 +138,11 @@ export default function AnalyticsDashboard() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [flaggedPosts, setFlaggedPosts] = useState<FlaggedPost[]>([]);
   const [loadingFlags, setLoadingFlags] = useState(false);
+  const [usersData, setUsersData] = useState<UsersData | null>(null);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [activeTab, setActiveTab] = useState<"flagged" | "users" | "trolls">(
+    "flagged"
+  );
 
   const fetchMetrics = useCallback(async () => {
     try {
@@ -165,6 +197,23 @@ export default function AnalyticsDashboard() {
     }
   }, []);
 
+  const fetchUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUsersData(data);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, []);
+
   // Check if user is admin
   useEffect(() => {
     if (status === "loading") return;
@@ -193,10 +242,11 @@ export default function AnalyticsDashboard() {
     if (!isAuthorized) return; // Don't fetch until authorized
     fetchMetrics();
     fetchFlaggedPosts();
+    fetchUsers(); // Add this
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchMetrics, 30000);
     return () => clearInterval(interval);
-  }, [dateRange, isAuthorized, fetchMetrics, fetchFlaggedPosts]);
+  }, [dateRange, isAuthorized, fetchMetrics, fetchFlaggedPosts, fetchUsers]);
 
   // Show loading while checking authorization
   if (status === "loading" || !isAuthorized) {
@@ -702,120 +752,575 @@ export default function AnalyticsDashboard() {
           </div>
         </motion.div>
 
-        {/* Flagged Posts Moderation Section */}
+        {/* Tabs */}
+        <div className="flex gap-4 mb-6 border-b border-[#BEBABA]/30">
+          <button
+            onClick={() => setActiveTab("flagged")}
+            className={`pb-2 px-4 text-sm font-medium transition ${
+              activeTab === "flagged"
+                ? "text-[#4E4A4A] border-b-2 border-[#4E4A4A]"
+                : "text-[#8C8888] hover:text-[#4E4A4A]"
+            }`}
+          >
+            Flagged Posts ({flaggedPosts.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("trolls")}
+            className={`pb-2 px-4 text-sm font-medium transition ${
+              activeTab === "trolls"
+                ? "text-[#4E4A4A] border-b-2 border-[#4E4A4A]"
+                : "text-[#8C8888] hover:text-[#4E4A4A]"
+            }`}
+          >
+            Potential Trolls ({usersData?.trolls.length || 0})
+          </button>
+          <button
+            onClick={() => setActiveTab("users")}
+            className={`pb-2 px-4 text-sm font-medium transition ${
+              activeTab === "users"
+                ? "text-[#4E4A4A] border-b-2 border-[#4E4A4A]"
+                : "text-[#8C8888] hover:text-[#4E4A4A]"
+            }`}
+          >
+            All Users ({usersData?.totalUsers || 0})
+          </button>
+        </div>
+
+        {/* Flagged Posts / User Management Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-[#ECE9E9]/90 backdrop-blur border border-[#FFFFFF]/24 rounded-2xl p-6 shadow-lg mb-8 mt-8"
         >
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-light text-[#4E4A4A]">
-              Flagged Posts ({flaggedPosts.length})
-            </h2>
-            <button
-              onClick={fetchFlaggedPosts}
-              disabled={loadingFlags}
-              className="px-4 py-2 bg-[#BEBABA] text-[#4E4A4A] rounded-full hover:bg-[#BEBABA]/90 transition text-sm font-medium disabled:opacity-50"
-            >
-              {loadingFlags ? "Loading..." : "Refresh"}
-            </button>
-          </div>
+          {activeTab === "flagged" && (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-light text-[#4E4A4A]">
+                  Flagged Posts ({flaggedPosts.length})
+                </h2>
+                <button
+                  onClick={fetchFlaggedPosts}
+                  disabled={loadingFlags}
+                  className="px-4 py-2 bg-[#BEBABA] text-[#4E4A4A] rounded-full hover:bg-[#BEBABA]/90 transition text-sm font-medium disabled:opacity-50"
+                >
+                  {loadingFlags ? "Loading..." : "Refresh"}
+                </button>
+              </div>
 
-          {flaggedPosts.length === 0 ? (
-            <p className="text-[#8C8888] text-center py-8">
-              No flagged posts. Great job! 🎉
-            </p>
-          ) : (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {flaggedPosts
-                .sort((a, b) => b.flagCount - a.flagCount)
-                .map((item) => (
-                  <div
-                    key={item.postId}
-                    className="bg-white/50 rounded-lg p-4 border border-[#BEBABA]/30"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-[#4E4A4A] mb-1">
-                          Post ID: {item.postId}
-                        </p>
-                        <p className="text-xs text-[#8C8888] mb-2 line-clamp-2">
-                          {item.post.content}
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-[#8C8888]">
-                          <span>
-                            By:{" "}
-                            {item.post.user.username || item.post.user.email}
-                          </span>
-                          <span>•</span>
-                          <span className="text-red-400 font-medium">
-                            Flagged {item.flagCount} time
-                            {item.flagCount > 1 ? "s" : ""}
-                          </span>
+              {flaggedPosts.length === 0 ? (
+                <p className="text-[#8C8888] text-center py-8">
+                  No flagged posts. Great job! ��
+                </p>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {flaggedPosts
+                    .sort((a, b) => b.flagCount - a.flagCount)
+                    .map((item) => (
+                      <div
+                        key={item.postId}
+                        className="bg-white/50 rounded-lg p-4 border border-[#BEBABA]/30"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-[#4E4A4A] mb-1">
+                              Post ID: {item.postId}
+                            </p>
+                            <p className="text-xs text-[#8C8888] mb-2 line-clamp-2">
+                              {item.post.content}
+                            </p>
+                            <div className="flex items-center gap-4 text-xs text-[#8C8888]">
+                              <span>
+                                By:{" "}
+                                {item.post.user.username ||
+                                  item.post.user.email}
+                              </span>
+                              <span>•</span>
+                              <span className="text-red-400 font-medium">
+                                Flagged {item.flagCount} time
+                                {item.flagCount > 1 ? "s" : ""}
+                              </span>
+                              {/* Add user status indicator */}
+                              {item.post.user.status &&
+                                item.post.user.status !== "active" && (
+                                  <>
+                                    <span>•</span>
+                                    <span
+                                      className={`font-medium ${
+                                        item.post.user.status === "banned"
+                                          ? "text-red-600"
+                                          : "text-orange-500"
+                                      }`}
+                                    >
+                                      {item.post.user.status === "banned"
+                                        ? "BANNED"
+                                        : "RESTRICTED"}
+                                    </span>
+                                  </>
+                                )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-[#BEBABA]/30">
+                          <p className="text-xs text-[#8C8888] mb-2">
+                            Flagged by:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {item.flaggedBy.map(
+                              (
+                                flagger: FlaggedPost["flaggedBy"][0],
+                                idx: number
+                              ) => (
+                                <span
+                                  key={idx}
+                                  className="text-xs px-2 py-1 bg-[#BEBABA]/20 rounded-full text-[#8C8888]"
+                                >
+                                  {flagger.username || flagger.email}
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-3 flex gap-2 flex-wrap">
+                          <button
+                            onClick={async () => {
+                              const confirmed = confirm(
+                                "Are you sure you want to delete this post?"
+                              );
+                              if (confirmed) {
+                                const res = await fetch(
+                                  `/api/posts/${item.postId}/delete`,
+                                  { method: "POST" }
+                                );
+                                if (res.ok) {
+                                  fetchFlaggedPosts();
+                                  fetchMetrics();
+                                }
+                              }
+                            }}
+                            className="px-3 py-1.5 text-xs bg-red-400/20 text-red-600 rounded-full hover:bg-red-400/30 transition"
+                          >
+                            Delete Post
+                          </button>
+
+                          {/* Show Restore if user is restricted/banned */}
+                          {item.post.user.status === "restricted" ||
+                          item.post.user.status === "banned" ? (
+                            <button
+                              onClick={async () => {
+                                const confirmed = confirm(
+                                  `Restore user ${
+                                    item.post.user.username ||
+                                    item.post.user.email
+                                  } to active status?`
+                                );
+                                if (confirmed) {
+                                  const res = await fetch(
+                                    `/api/admin/users/${item.post.user.id}/restore`,
+                                    { method: "POST" }
+                                  );
+                                  if (res.ok) {
+                                    fetchFlaggedPosts();
+                                  }
+                                }
+                              }}
+                              className="px-3 py-1.5 text-xs bg-green-400/20 text-green-600 rounded-full hover:bg-green-400/30 transition"
+                            >
+                              Restore User
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={async () => {
+                                  const confirmed = confirm(
+                                    `Restrict user ${
+                                      item.post.user.username ||
+                                      item.post.user.email
+                                    } for 7 days?`
+                                  );
+                                  if (confirmed) {
+                                    const res = await fetch(
+                                      `/api/admin/users/${item.post.user.id}/restrict`,
+                                      {
+                                        method: "POST",
+                                        headers: {
+                                          "Content-Type": "application/json",
+                                        },
+                                        body: JSON.stringify({ days: 7 }),
+                                      }
+                                    );
+                                    if (res.ok) {
+                                      fetchFlaggedPosts();
+                                    }
+                                  }
+                                }}
+                                className="px-3 py-1.5 text-xs bg-orange-400/20 text-orange-600 rounded-full hover:bg-orange-400/30 transition"
+                              >
+                                Restrict User
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const confirmed = confirm(
+                                    `BAN user ${
+                                      item.post.user.username ||
+                                      item.post.user.email
+                                    } permanently? This cannot be undone easily.`
+                                  );
+                                  if (confirmed) {
+                                    const res = await fetch(
+                                      `/api/admin/users/${item.post.user.id}/ban`,
+                                      { method: "POST" }
+                                    );
+                                    if (res.ok) {
+                                      fetchFlaggedPosts();
+                                    }
+                                  }
+                                }}
+                                className="px-3 py-1.5 text-xs bg-red-600/20 text-red-700 rounded-full hover:bg-red-600/30 transition"
+                              >
+                                Ban User
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-[#BEBABA]/30">
-                      <p className="text-xs text-[#8C8888] mb-2">Flagged by:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {item.flaggedBy.map(
-                          (
-                            flagger: FlaggedPost["flaggedBy"][0],
-                            idx: number
-                          ) => (
-                            <span
-                              key={idx}
-                              className="text-xs px-2 py-1 bg-[#BEBABA]/20 rounded-full text-[#8C8888]"
+                    ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === "trolls" && (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-light text-[#4E4A4A]">
+                  Potential Trolls ({usersData?.trolls.length || 0})
+                </h2>
+                <button
+                  onClick={fetchUsers}
+                  disabled={loadingUsers}
+                  className="px-4 py-2 bg-[#BEBABA] text-[#4E4A4A] rounded-full hover:bg-[#BEBABA]/90 transition text-sm font-medium disabled:opacity-50"
+                >
+                  {loadingUsers ? "Loading..." : "Refresh"}
+                </button>
+              </div>
+
+              {!usersData ? (
+                <p className="text-[#8C8888] text-center py-8">Loading...</p>
+              ) : usersData.trolls.length === 0 ? (
+                <p className="text-[#8C8888] text-center py-8">
+                  No potential trolls detected! 🎉
+                </p>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {usersData.trolls
+                    .sort((a, b) => b.stats.trollScore - a.stats.trollScore)
+                    .map((user) => (
+                      <div
+                        key={user.id}
+                        className="bg-white/50 rounded-lg p-4 border border-[#BEBABA]/30"
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-sm font-medium text-[#4E4A4A]">
+                                {user.username || user.email}
+                              </span>
+                              <span className="text-xs px-2 py-1 bg-red-400/20 text-red-600 rounded-full">
+                                Troll Score: {user.stats.trollScore}
+                              </span>
+                              {user.status !== "active" && (
+                                <span
+                                  className={`text-xs px-2 py-1 rounded-full ${
+                                    user.status === "banned"
+                                      ? "bg-red-600/20 text-red-700"
+                                      : "bg-orange-400/20 text-orange-600"
+                                  }`}
+                                >
+                                  {user.status.toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-[#8C8888]">
+                              <div>
+                                <span className="font-medium">Posts:</span>{" "}
+                                {user.stats.totalPosts}
+                              </div>
+                              <div>
+                                <span className="font-medium">Flags:</span>{" "}
+                                {user.stats.totalPostFlags}
+                              </div>
+                              <div>
+                                <span className="font-medium">Avg Score:</span>{" "}
+                                {user.stats.avgPostScore}
+                              </div>
+                              <div>
+                                <span className="font-medium">User Flags:</span>{" "}
+                                {user.flagCount}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex gap-2 flex-wrap">
+                          {user.status === "banned" ? (
+                            <button
+                              onClick={async () => {
+                                const confirmed = confirm(
+                                  `Restore user ${user.username || user.email}?`
+                                );
+                                if (confirmed) {
+                                  const res = await fetch(
+                                    `/api/admin/users/${user.id}/restore`,
+                                    { method: "POST" }
+                                  );
+                                  if (res.ok) {
+                                    fetchUsers();
+                                  }
+                                }
+                              }}
+                              className="px-3 py-1.5 text-xs bg-green-400/20 text-green-600 rounded-full hover:bg-green-400/30 transition"
                             >
-                              {flagger.username || flagger.email}
+                              Restore
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={async () => {
+                                  const confirmed = confirm(
+                                    `BAN ${
+                                      user.username || user.email
+                                    } permanently? Troll Score: ${
+                                      user.stats.trollScore
+                                    }`
+                                  );
+                                  if (confirmed) {
+                                    const res = await fetch(
+                                      `/api/admin/users/${user.id}/ban`,
+                                      { method: "POST" }
+                                    );
+                                    if (res.ok) {
+                                      fetchUsers();
+                                      fetchFlaggedPosts();
+                                    }
+                                  }
+                                }}
+                                className="px-3 py-1.5 text-xs bg-red-600/20 text-red-700 rounded-full hover:bg-red-600/30 transition font-medium"
+                              >
+                                🚫 Quick Ban
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const confirmed = confirm(
+                                    `Restrict ${
+                                      user.username || user.email
+                                    } for 7 days?`
+                                  );
+                                  if (confirmed) {
+                                    const res = await fetch(
+                                      `/api/admin/users/${user.id}/restrict`,
+                                      {
+                                        method: "POST",
+                                        headers: {
+                                          "Content-Type": "application/json",
+                                        },
+                                        body: JSON.stringify({ days: 7 }),
+                                      }
+                                    );
+                                    if (res.ok) {
+                                      fetchUsers();
+                                    }
+                                  }
+                                }}
+                                className="px-3 py-1.5 text-xs bg-orange-400/20 text-orange-600 rounded-full hover:bg-orange-400/30 transition"
+                              >
+                                Restrict 7d
+                              </button>
+                              {user.status === "restricted" && (
+                                <button
+                                  onClick={async () => {
+                                    const confirmed = confirm(
+                                      `Restore user ${
+                                        user.username || user.email
+                                      }?`
+                                    );
+                                    if (confirmed) {
+                                      const res = await fetch(
+                                        `/api/admin/users/${user.id}/restore`,
+                                        { method: "POST" }
+                                      );
+                                      if (res.ok) {
+                                        fetchUsers();
+                                      }
+                                    }
+                                  }}
+                                  className="px-3 py-1.5 text-xs bg-green-400/20 text-green-600 rounded-full hover:bg-green-400/30 transition"
+                                >
+                                  Restore
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === "users" && (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-light text-[#4E4A4A]">
+                  User Management ({usersData?.totalUsers || 0})
+                </h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const filtered = usersData?.users.filter(
+                        (u) => u.status === "restricted"
+                      );
+                      setUsersData(
+                        filtered
+                          ? {
+                              ...usersData!,
+                              users: filtered,
+                            }
+                          : usersData
+                      );
+                    }}
+                    className="px-3 py-1 text-xs bg-orange-400/20 text-orange-600 rounded-full hover:bg-orange-400/30 transition"
+                  >
+                    Restricted ({usersData?.restrictedUsers.length || 0})
+                  </button>
+                  <button
+                    onClick={() => {
+                      const filtered = usersData?.users.filter(
+                        (u) => u.status === "banned"
+                      );
+                      setUsersData(
+                        filtered
+                          ? {
+                              ...usersData!,
+                              users: filtered,
+                            }
+                          : usersData
+                      );
+                    }}
+                    className="px-3 py-1 text-xs bg-red-600/20 text-red-700 rounded-full hover:bg-red-600/30 transition"
+                  >
+                    Banned ({usersData?.bannedUsers.length || 0})
+                  </button>
+                  <button
+                    onClick={fetchUsers}
+                    disabled={loadingUsers}
+                    className="px-4 py-2 bg-[#BEBABA] text-[#4E4A4A] rounded-full hover:bg-[#BEBABA]/90 transition text-sm font-medium disabled:opacity-50"
+                  >
+                    {loadingUsers ? "Loading..." : "Refresh"}
+                  </button>
+                </div>
+              </div>
+
+              {!usersData ? (
+                <p className="text-[#8C8888] text-center py-8">Loading...</p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {usersData.users.map((user) => (
+                    <div
+                      key={user.id}
+                      className="bg-white/50 rounded-lg p-3 border border-[#BEBABA]/30 flex items-center justify-between"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-[#4E4A4A]">
+                            {user.username || user.email}
+                          </span>
+                          {user.status !== "active" && (
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full ${
+                                user.status === "banned"
+                                  ? "bg-red-600/20 text-red-700"
+                                  : "bg-orange-400/20 text-orange-600"
+                              }`}
+                            >
+                              {user.status.toUpperCase()}
                             </span>
-                          )
+                          )}
+                          {user.stats.trollScore >= 50 && (
+                            <span className="text-xs px-2 py-0.5 bg-red-400/20 text-red-600 rounded-full">
+                              Troll: {user.stats.trollScore}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-[#8C8888] mt-1">
+                          Posts: {user.stats.totalPosts} • Flags:{" "}
+                          {user.stats.totalPostFlags} • Score:{" "}
+                          {user.stats.avgPostScore}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {user.status === "banned" ? (
+                          <button
+                            onClick={async () => {
+                              const res = await fetch(
+                                `/api/admin/users/${user.id}/restore`,
+                                { method: "POST" }
+                              );
+                              if (res.ok) fetchUsers();
+                            }}
+                            className="px-2 py-1 text-xs bg-green-400/20 text-green-600 rounded-full hover:bg-green-400/30 transition"
+                          >
+                            Restore
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={async () => {
+                                const confirmed = confirm(
+                                  `Restrict ${user.username || user.email}?`
+                                );
+                                if (confirmed) {
+                                  const res = await fetch(
+                                    `/api/admin/users/${user.id}/restrict`,
+                                    {
+                                      method: "POST",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                      },
+                                      body: JSON.stringify({ days: 7 }),
+                                    }
+                                  );
+                                  if (res.ok) fetchUsers();
+                                }
+                              }}
+                              className="px-2 py-1 text-xs bg-orange-400/20 text-orange-600 rounded-full hover:bg-orange-400/30 transition"
+                            >
+                              Restrict
+                            </button>
+                            <button
+                              onClick={async () => {
+                                const confirmed = confirm(
+                                  `BAN ${user.username || user.email}?`
+                                );
+                                if (confirmed) {
+                                  const res = await fetch(
+                                    `/api/admin/users/${user.id}/ban`,
+                                    { method: "POST" }
+                                  );
+                                  if (res.ok) fetchUsers();
+                                }
+                              }}
+                              className="px-2 py-1 text-xs bg-red-600/20 text-red-700 rounded-full hover:bg-red-600/30 transition"
+                            >
+                              Ban
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        onClick={async () => {
-                          // Add delete/soft-delete functionality
-                          const confirmed = confirm(
-                            "Are you sure you want to delete this post?"
-                          );
-                          if (confirmed) {
-                            // Call delete API
-                            const res = await fetch(
-                              `/api/posts/${item.postId}/delete`,
-                              { method: "POST" }
-                            );
-                            if (res.ok) {
-                              fetchFlaggedPosts();
-                              fetchMetrics();
-                            }
-                          }
-                        }}
-                        className="px-3 py-1.5 text-xs bg-red-400/20 text-red-600 rounded-full hover:bg-red-400/30 transition"
-                      >
-                        Delete Post
-                      </button>
-                      <button
-                        onClick={async () => {
-                          // Dismiss flags (remove all flags for this post)
-                          const confirmed = confirm(
-                            "Dismiss all flags for this post?"
-                          );
-                          if (confirmed) {
-                            // You'd need to create an API endpoint to dismiss flags
-                            // For now, just refresh
-                            fetchFlaggedPosts();
-                          }
-                        }}
-                        className="px-3 py-1.5 text-xs bg-[#BEBABA]/20 text-[#4E4A4A] rounded-full hover:bg-[#BEBABA]/30 transition"
-                      >
-                        Dismiss Flags
-                      </button>
-                    </div>
-                  </div>
-                ))}
-            </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </motion.div>
       </div>

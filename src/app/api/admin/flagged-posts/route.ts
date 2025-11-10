@@ -18,6 +18,8 @@ export async function GET() {
                 id: true,
                 username: true,
                 email: true,
+                status: true, // Add this
+                restrictedUntil: true, // Add this
               },
             },
           },
@@ -27,6 +29,8 @@ export async function GET() {
             id: true,
             username: true,
             email: true,
+            status: true, // Add this
+            restrictedUntil: true, // Add this
           },
         },
       },
