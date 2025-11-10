@@ -12,9 +12,9 @@ export async function POST(
     }
 
     const { userId } = await context.params;
-    const { days = 7, reason } = await request.json().catch(() => ({}));
+    const { days = 7 } = await request.json().catch(() => ({}));
 
-    await restrictUser(userId, days, reason);
+    await restrictUser(userId, days);
 
     return NextResponse.json({ success: true });
   } catch (error) {
