@@ -5,7 +5,6 @@ import { AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { IoMdArrowRoundUp, IoMdArrowRoundDown } from "react-icons/io";
 import { IoMdArrowBack } from "react-icons/io";
-import { IoFlagOutline } from "react-icons/io5";
 import MainView from "../../components/MainView";
 import { useSession } from "next-auth/react";
 import SignIn from "../../components/sign-in";
@@ -61,7 +60,7 @@ export default function Feed() {
     selectedUserProfile,
     setSelectedUserProfile,
   });
-  const { flaggedPosts, flagNotification, handleFlagPosts } = useFlag();
+  const { flaggedPosts, handleFlagPosts } = useFlag();
   const { handleFeedbackSubmit } = useFeedback();
   const { handleInteraction } = useInteraction({
     session,
@@ -77,11 +76,7 @@ export default function Feed() {
   useOwnProfile(showOwnProfile, userProfile, setUserProfile);
   useKeyboardNavigation(currentIndex, setCurrentIndex, posts.length);
 
-  const { isScrolling } = useMouseWheelNavigation(
-    currentIndex,
-    setCurrentIndex,
-    posts.length
-  );
+  useMouseWheelNavigation(currentIndex, setCurrentIndex, posts.length);
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/feed" });
@@ -227,69 +222,18 @@ export default function Feed() {
     );
   }
 
-  // own profile modal
-  if (showOwnProfile) {
-    return (
-      <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
-        <MainView>
-          <motion.div
-            key="signin"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="w-full h-full flex items-center justify-center"
-          >
-            <UserProfile
-              profile={userProfile}
-              onBack={() => {
-                setShowOwnProfile(false);
-                setShowMore(true);
-              }}
-              isOwnProfile={true}
-              onDeletePost={handleDeletePost}
-            />
-          </motion.div>
-        </MainView>
-      </div>
-    );
-  }
-
-  // feedback modal
-  if (showFeedback) {
-    return (
-      <div className="flex items-center justify-center min-h-screen -mt-4 px-2 sm:px-6 md:px-12">
-        <MainView>
-          <motion.div
-            key="signin"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            className="w-full h-full flex items-center justify-center"
-          >
-            <Feedback
-              onBack={() => {
-                setShowFeedback(false);
-                setShowMore(true);
-              }}
-              onSubmit={handleFeedbackSubmit}
-            />
-          </motion.div>
-        </MainView>
-      </div>
-    );
-  }
-
   // main feed
   return (
     <div className="flex justify-center min-h-screen pt-28 pb-12 px-4 sm:px-8">
       {" "}
       <MainView>
         {/* Navigation Hint - shows on first visit */}
-        {!showMore && !isExpressing && !selectedUserProfile && !showSignIn && (
-          <NavigationHint />
-        )}
+        {!showMore &&
+          !isExpressing &&
+          !selectedUserProfile &&
+          !showSignIn &&
+          !showOwnProfile &&
+          !showFeedback && <NavigationHint />}
         <AnimatePresence mode="wait">
           {showSignIn ? (
             <motion.div
@@ -304,8 +248,8 @@ export default function Feed() {
                 <SignIn onSignInSuccess={() => setShowSignIn(false)} />
 
                 <p className="text-xs text-gray-400 text-center mt-6 max-w-xs">
-                  By signing in, you’ll receive a welcome email and rare updates
-                  from Unbound.
+                  By signing in, you&apos;ll receive a welcome email and rare
+                  updates from Unbound.
                 </p>
               </div>
             </motion.div>
@@ -328,7 +272,7 @@ export default function Feed() {
                   {/* Back arrow at the top left */}
                   <div className="flex items-start w-full">
                     <button
-                      className="mb-4 mt-4 ml-2 cursor-pointer"
+                      className="cursor-pointer text-[#8C8888] hover:text-[#4E4A4A] transition-colors mb-4"
                       onClick={() => setShowMore(false)}
                       aria-label="Back to Feed"
                     >
@@ -381,6 +325,42 @@ export default function Feed() {
               onBack={() => setIsExpressing(false)}
               onSubmit={handleExpressionSubmission}
             />
+          ) : showOwnProfile ? (
+            <motion.div
+              key="ownprofile"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="w-full h-full flex flex-col overflow-hidden"
+            >
+              <UserProfile
+                profile={userProfile}
+                onBack={() => {
+                  setShowOwnProfile(false);
+                  setShowMore(true);
+                }}
+                isOwnProfile={true}
+                onDeletePost={handleDeletePost}
+              />
+            </motion.div>
+          ) : showFeedback ? (
+            <motion.div
+              key="feedback"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="w-full h-full flex flex-col overflow-hidden"
+            >
+              <Feedback
+                onBack={() => {
+                  setShowFeedback(false);
+                  setShowMore(true);
+                }}
+                onSubmit={handleFeedbackSubmit}
+              />
+            </motion.div>
           ) : selectedUserProfile ? (
             <UserProfile
               profile={selectedUserProfile}

@@ -56,63 +56,99 @@ export default function Feedback({ onBack, onSubmit }) {
   };
 
   return (
-    <div className="flex flex-col flex-1">
-      {/* Top: Back button and dropdown */}
-      <div className="flex flex-col items-start">
-        <button className="mb-4 mt-4 ml-2" onClick={onBack} aria-label="Back">
-          <IoMdArrowBack size={24} />
-        </button>
-        <label className="mb-2 ml-2 text-sm font-semibold">Category</label>
-        <select
-          className="w-full p-2 rounded border-2 border-[#9C9191] mb-4 focus:outline-none"
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-        >
-          <option value="">Select a category...</option>
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-        <textarea
-          className="w-full p-2 rounded border-2 border-[#9C9191] mb-4 focus:outline-none"
-          placeholder="Please give your suggestions."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          disabled={!selected}
-        />
-        <div className="flex justify-end w-full px-1 mb-2">
-          <span
-            className={`text-xs ${
-              text.length > MAX_LENGTH ? "text-red-500" : "text-[#9C9191]"
-            }`}
+    <div className="flex flex-col h-full w-full overflow-hidden">
+      {/* Header - Fixed at top */}
+      <div className="flex items-center justify-between mb-6 flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className="cursor-pointer text-[#8C8888] hover:text-[#4E4A4A] transition-colors"
+            aria-label="Back to feed"
           >
-            {text.length} / {MAX_LENGTH}
-          </span>
+            <IoMdArrowBack size={24} />
+          </button>
+          <div className="flex flex-col">
+            <h1 className="text-2xl sm:text-3xl font-light tracking-wide text-[#4E4A4A]">
+              Give Feedback
+            </h1>
+          </div>
         </div>
-        {error && (
-          <div className="flex justify-center w-full mb-2">
-            <span className="text-sm text-red-500 text-center">{error}</span>
-          </div>
-        )}
-        {success && (
-          <div className="flex justify-center w-full mb-2">
-            <span className="text-sm text-[#8C8888] text-center">
-              {success}
-            </span>
-          </div>
-        )}
       </div>
-      {/* Bottom: Send Feedback button aligned right */}
-      <div className="flex justify-end">
-        <button
-          className="px-4 py-1 rounded-lg bg-[#BEBABA] text-center mb-6 mr-8 cursor-pointer"
-          onClick={handleSubmit}
-          disabled={!selected || text.trim().length === 0}
-        >
-          Send Feedback
-        </button>
+
+      {/* Form Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex flex-col gap-6">
+          {/* Category Selection */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-[#8C8888] uppercase tracking-wider">
+              Category
+            </label>
+            <select
+              className="w-full px-4 py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-[#4E4A4A] font-light focus:outline-none focus:border-[#BEBABA] transition-all duration-300"
+              value={selected}
+              onChange={(e) => setSelected(e.target.value)}
+            >
+              <option value="">Select a category...</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Feedback Text */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-[#8C8888] uppercase tracking-wider">
+              Your Feedback
+            </label>
+            <textarea
+              className="w-full px-4 py-3 rounded-[24px] border-2 border-[#BEBABA]/50 bg-transparent text-[#4E4A4A] font-light leading-relaxed tracking-wide focus:outline-none focus:border-[#BEBABA] transition-all duration-300 resize-none min-h-[120px]"
+              placeholder="Please share your thoughts and suggestions..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              disabled={!selected}
+            />
+            <div className="flex justify-end w-full px-1">
+              <span
+                className={`text-xs uppercase tracking-wider ${
+                  text.length > MAX_LENGTH ? "text-red-400" : "text-[#8C8888]"
+                }`}
+              >
+                {text.length} / {MAX_LENGTH}
+              </span>
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="flex justify-center w-full">
+              <span className="text-sm text-red-400 text-center font-light">
+                {error}
+              </span>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {success && (
+            <div className="flex justify-center w-full">
+              <span className="text-sm text-[#4E4A4A] text-center font-light">
+                {success}
+              </span>
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <div className="flex justify-end pt-4">
+            <button
+              className="px-6 py-3 rounded-full bg-[#BEBABA] text-[#4E4A4A] text-sm uppercase tracking-wider hover:bg-[#BEBABA]/90 hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSubmit}
+              disabled={!selected || text.trim().length === 0}
+            >
+              Send Feedback
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

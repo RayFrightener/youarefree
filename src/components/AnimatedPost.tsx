@@ -1,8 +1,8 @@
 "use client";
 
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { useTextReveal } from "../hooks/useTextReveal";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { IoFlagOutline } from "react-icons/io5";
 
 interface AnimatedPostProps {
@@ -20,7 +20,7 @@ interface AnimatedPostProps {
 export default function AnimatedPost({
   content,
   username,
-  postId,
+  // postId, // Not used, removed from destructuring
   onUsernameClick,
   onFlagClick,
   isFlagged = false,
@@ -35,10 +35,10 @@ export default function AnimatedPost({
   // const skipButtonTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // const hasShownSkipRef = useRef(false);
 
-  const { text, visibleChars, isComplete } = useTextReveal({
+  const { text, visibleChars } = useTextReveal({
     // const { text, visibleChars, isComplete, skip } = useTextReveal({
     text: content,
-    charsPerSecond: 9.825,
+    charsPerSecond: 9.825, // 9.825 is the average speed of the human voice wow check this, i was just experimenting what felt best and this is what felt best and OMG, OMG!!!
     onComplete: () => {
       setTimeout(() => {
         setShowUsername(true);
