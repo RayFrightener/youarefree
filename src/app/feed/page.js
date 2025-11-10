@@ -18,6 +18,7 @@ import UserProfile from "../../components/UserProfile";
 import Feedback from "../../components/Feedback";
 import HowToNavigate from "../../components/HowToNavigate";
 import NavigationHint from "../../components/NavigationHint";
+import AnimatedPost from "../../components/AnimatedPost";
 
 //hooks
 //navigation/navigate/up/down/button
@@ -335,9 +336,9 @@ export default function Feed() {
                     </button>
                   </div>
                   {/* Other buttons centered below */}
-                  <div className="flex flex-col items-center justify-center w-full flex-1">
+                  <div className="flex flex-col items-center justify-center w-full flex-1 gap-3">
                     <button
-                      className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4 cursor-pointer"
+                      className="px-6 py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-[#8C8888] font-medium text-sm uppercase tracking-wider hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer min-w-[200px] active:scale-[0.98]"
                       onClick={() => {
                         setShowHowToNavigate(true);
                       }}
@@ -345,7 +346,7 @@ export default function Feed() {
                       How to Navigate
                     </button>
                     <button
-                      className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4 cursor-pointer"
+                      className="px-6 py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-[#8C8888] font-medium text-sm uppercase tracking-wider hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer min-w-[200px] active:scale-[0.98]"
                       onClick={async () => {
                         const res = await fetch("/api/me");
                         const data = await res.json();
@@ -357,7 +358,7 @@ export default function Feed() {
                       Profile
                     </button>
                     <button
-                      className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4 cursor-pointer"
+                      className="px-6 py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-[#8C8888] font-medium text-sm uppercase tracking-wider hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer min-w-[200px] active:scale-[0.98]"
                       onClick={() => {
                         setShowFeedback(true);
                         setShowMore(false);
@@ -367,7 +368,7 @@ export default function Feed() {
                     </button>
                     <button
                       onClick={handleSignOut}
-                      className="px-4 py-2 rounded-lg bg-[#BEBABA] text-[#9C9191] font-semibold mt-4 cursor-pointer"
+                      className="px-6 py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-[#8C8888] font-medium text-sm uppercase tracking-wider hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer min-w-[200px] active:scale-[0.98]"
                     >
                       Sign Out
                     </button>
@@ -388,120 +389,103 @@ export default function Feed() {
               }}
             />
           ) : (
-            <motion.div
-              key={`${currentIndex}-${sort}${isScrolling ? "-scrolling" : ""}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="w-full h-full flex flex-col items-center justify-center"
-            >
+            <AnimatePresence mode="wait">
               <motion.div
-                className="flex-grow flex items-center justify-center flex-col px-4"
-                drag="y"
-                dragConstraints={{ top: 0, bottom: 0 }}
-                onDragEnd={(event, info) => {
-                  if (info.offset.y < -50 && currentIndex < posts.length - 1) {
-                    setCurrentIndex(currentIndex + 1); // Swipe up: next post
-                  } else if (info.offset.y > 50 && currentIndex > 0) {
-                    setCurrentIndex(currentIndex - 1); // Swipe down: previous post
-                  }
-                }}
+                key={`post-${currentIndex}-${sort}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="flex-1 flex flex-col"
               >
-                {/* Post Content */}
-                <div className="flex-grow flex items-center justify-center flex-col px-4">
-                  <h2 className="text-xl sm:text-2xl md:text-3xl text-center font-light leading-relaxed tracking-wide max-w-2xl mx-auto px-4">
-                    {posts[currentIndex]?.content || "Expressing..."}
-                  </h2>
-                  {posts[currentIndex]?.user?.username && (
-                    <div className="mt-2 text-sm text-[#8C8888] relative w-full max-w-sm flex items-center justify-center">
-                      <span className="mx-auto flex items-center">
-                        —{" "}
+                <motion.div
+                  className="flex-1 flex items-center justify-center flex-col px-2 sm:px-4"
+                  drag="y"
+                  dragConstraints={{ top: 0, bottom: 0 }}
+                  onDragEnd={(event, info) => {
+                    if (
+                      info.offset.y < -50 &&
+                      currentIndex < posts.length - 1
+                    ) {
+                      setCurrentIndex(currentIndex + 1);
+                    } else if (info.offset.y > 50 && currentIndex > 0) {
+                      setCurrentIndex(currentIndex - 1);
+                    }
+                  }}
+                >
+                  <AnimatedPost
+                    content={posts[currentIndex]?.content || "Expressing..."}
+                    username={posts[currentIndex]?.user?.username}
+                    postId={posts[currentIndex]?.id}
+                    onUsernameClick={() =>
+                      handleUserClick(posts[currentIndex]?.user?.username)
+                    }
+                    onFlagClick={() => handleFlagPosts(posts[currentIndex]?.id)}
+                    isFlagged={flaggedPosts[posts[currentIndex]?.id]}
+                    showControls={true}
+                    renderButtons={() => (
+                      <div className="flex items-center justify-between gap-2 sm:gap-4 w-full max-w-full overflow-hidden">
                         <button
-                          className="underline cursor-pointer"
+                          onClick={() => {
+                            toggleSort();
+                            setCurrentIndex(0);
+                          }}
+                          className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-xs sm:text-sm uppercase tracking-[0.2em] text-[#8C8888] hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer active:scale-[0.98] font-medium whitespace-nowrap flex-shrink-0"
+                        >
+                          {sort === "newest" ? "Uplifting" : "Newest"}
+                        </button>
+
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <button
+                            onClick={() =>
+                              handleInteraction(() =>
+                                handleVote(posts[currentIndex]?.id, 1)
+                              )
+                            }
+                            className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer active:scale-[0.95] flex-shrink-0 ${
+                              votes[posts[currentIndex]?.id] === 1
+                                ? "bg-[#BEBABA] text-[#4E4A4A] border-[#BEBABA] shadow-sm"
+                                : "text-[#8C8888] border-[#BEBABA]/50 hover:border-[#BEBABA] hover:bg-[#BEBABA]/10"
+                            }`}
+                          >
+                            <IoMdArrowRoundUp
+                              size={20}
+                              className="sm:w-[22px] sm:h-[22px]"
+                            />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleInteraction(() =>
+                                handleVote(posts[currentIndex]?.id, -1)
+                              )
+                            }
+                            className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer active:scale-[0.95] flex-shrink-0 ${
+                              votes[posts[currentIndex]?.id] === -1
+                                ? "bg-[#BEBABA] text-[#4E4A4A] border-[#BEBABA] shadow-sm"
+                                : "text-[#8C8888] border-[#BEBABA]/50 hover:border-[#BEBABA] hover:bg-[#BEBABA]/10"
+                            }`}
+                          >
+                            <IoMdArrowRoundDown
+                              size={20}
+                              className="sm:w-[22px] sm:h-[22px]"
+                            />
+                          </button>
+                        </div>
+
+                        <button
+                          className="px-5 sm:px-7 py-2.5 sm:py-3 rounded-full bg-[#BEBABA] text-[#4E4A4A] text-xs sm:text-sm uppercase tracking-[0.25em] hover:bg-[#BEBABA]/90 hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98] font-medium whitespace-nowrap flex-shrink-0"
                           onClick={() =>
-                            handleUserClick(posts[currentIndex].user.username)
+                            handleInteraction(() => setIsExpressing(true))
                           }
                         >
-                          {posts[currentIndex].user.username}
+                          Express
                         </button>
-                      </span>
-                      <button
-                        className={`absolute right-0 cursor-pointer transition-opacity ${
-                          flaggedPosts[posts[currentIndex]?.id]
-                            ? "text-red-500 opacity 80"
-                            : "opacity-40 hover:opacity-80"
-                        }`}
-                        title="Flag this post"
-                        onClick={() => handleFlagPosts(posts[currentIndex].id)}
-                      >
-                        <IoFlagOutline size={18} />
-                      </button>
-                      {flagNotification && (
-                        <div className="absolute right-0 mt-18 w-max bg-[#F5F5F5] text-[#8C8888] text-xs px-3 py-1 rounded shadow z-10">
-                          {flagNotification}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    )}
+                  />
+                </motion.div>
               </motion.div>
-
-              {/* Buttons */}
-              <div className="mt-auto pt-12">
-                <div className="flex items-center justify-between gap-6">
-                  <button
-                    onClick={() => {
-                      toggleSort();
-                      setCurrentIndex(0);
-                    }}
-                    className="px-4 py-2 rounded-full border border-[#BEBABA]/70 text-xs uppercase tracking-[0.2em] text-[#8C8888] hover:bg-[#BEBABA]/20 transition-colors cursor-pointer"
-                  >
-                    {sort === "newest" ? "Uplifting" : "Newest"}
-                  </button>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() =>
-                        handleInteraction(() =>
-                          handleVote(posts[currentIndex]?.id, 1)
-                        )
-                      }
-                      className={`h-12 w-12 rounded-full flex items-center justify-center border border-[#BEBABA]/70 ${
-                        votes[posts[currentIndex]?.id] === 1
-                          ? "bg-[#BEBABA] text-[#4E4A4A]"
-                          : "text-[#8C8888]"
-                      }`}
-                    >
-                      <IoMdArrowRoundUp size={18} />
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleInteraction(() =>
-                          handleVote(posts[currentIndex]?.id, -1)
-                        )
-                      }
-                      className={`h-12 w-12 rounded-full flex items-center justify-center border border-[#BEBABA]/70 ${
-                        votes[posts[currentIndex]?.id] === -1
-                          ? "bg-[#BEBABA] text-[#4E4A4A]"
-                          : "text-[#8C8888]"
-                      }`}
-                    >
-                      <IoMdArrowRoundDown size={18} />
-                    </button>
-                  </div>
-
-                  <button
-                    className="px-5 py-2 rounded-full bg-[#BEBABA] text-[#4E4A4A] text-xs uppercase tracking-[0.25em] hover:bg-[#BEBABA]/90 transition-colors cursor-pointer"
-                    onClick={() =>
-                      handleInteraction(() => setIsExpressing(true))
-                    }
-                  >
-                    Express
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+            </AnimatePresence>
           )}
         </AnimatePresence>
       </MainView>
