@@ -15,7 +15,6 @@ interface AnimatedPostProps {
   showControls: boolean;
   onControlsReady?: () => void;
   renderButtons?: () => React.ReactNode;
-  readingTime?: number;
   onPostView?: () => void;
 }
 
@@ -29,7 +28,6 @@ export default function AnimatedPost({
   showControls,
   onControlsReady,
   renderButtons,
-  readingTime,
   onPostView,
 }: AnimatedPostProps) {
   const [showUsername, setShowUsername] = useState(false);
@@ -175,14 +173,6 @@ export default function AnimatedPost({
                 >
                   {username}
                 </button>
-                {readingTime && readingTime > 0 && (
-                  <>
-                    <span className="text-[#BEBABA]">•</span>
-                    <span className="text-xs italic">
-                      ~{readingTime} {readingTime === 1 ? "min" : "mins"} read
-                    </span>
-                  </>
-                )}
                 {onFlagClick && (
                   <button
                     className={`cursor-pointer transition-opacity ${

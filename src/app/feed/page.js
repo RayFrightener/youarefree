@@ -142,14 +142,6 @@ export default function Feed() {
     showBookmarks,
   ]);
 
-  // Calculate reading time (words / 200 words per minute)
-  const calculateReadingTime = (content) => {
-    if (!content) return 0;
-    const words = content.trim().split(/\s+/).length;
-    const minutes = Math.ceil(words / 200); // Average reading speed: 200 words/min
-    return minutes;
-  };
-
   // Check bookmark status for current post
   useEffect(() => {
     const checkBookmarkStatus = async () => {
@@ -630,23 +622,10 @@ export default function Feed() {
                     onFlagClick={() => handleFlagPosts(posts[currentIndex]?.id)}
                     isFlagged={flaggedPosts[posts[currentIndex]?.id]}
                     showControls={!focusMode}
-                    readingTime={calculateReadingTime(
-                      posts[currentIndex]?.content
-                    )}
                     onPostView={() => {
                       if (sort === "resonance" && posts[currentIndex]?.id) {
                         track("resonance_post_viewed", {
                           postId: posts[currentIndex].id,
-                        });
-                      }
-                      // Track actual reading time when post is fully viewed
-                      const readingTime = calculateReadingTime(
-                        posts[currentIndex]?.content
-                      );
-                      if (readingTime > 0 && posts[currentIndex]?.id) {
-                        track("post_reading_time_actual", {
-                          postId: posts[currentIndex].id,
-                          metadata: { estimatedMinutes: readingTime },
                         });
                       }
                     }}
