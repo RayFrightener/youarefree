@@ -5,7 +5,7 @@ import { deleteComment } from "@/services/commentService";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -22,7 +22,8 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const commentId = parseInt(params.id, 10);
+    const { id } = await context.params;
+    const commentId = parseInt(id, 10);
     if (isNaN(commentId)) {
       return NextResponse.json({ error: "Invalid comment ID" }, { status: 400 });
     }
