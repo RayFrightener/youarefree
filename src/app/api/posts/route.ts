@@ -18,7 +18,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const sort = searchParams.get("sort") || "newest";
+  const sort = searchParams.get("sort") || "smart"; // Default to smart feed
   let userId: string | undefined = undefined;
 
   try {

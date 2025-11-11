@@ -23,7 +23,7 @@ import { track } from "../lib/analytics";
 
 export function usePosts() {
   const [posts, setPosts] = useState([]);
-  const [sort, setSort] = useState("highest");
+  const [sort, setSort] = useState("smart"); // Default to smart feed
   const [votes, setVotes] = useState({});
 
   const fetchPosts = useCallback(async () => {
@@ -427,13 +427,15 @@ export function useUserProfileClick(setSelectedUserProfile) {
 
 export function useToggleSort(setSort) {
   /**
-   * Toggles the sort state: newest -> highest -> resonance -> newest
+   * Toggles the sort state: smart -> newest -> highest -> resonance -> smart
    */
   const toggleSort = useCallback(() => {
     setSort((prevSort) => {
+      if (prevSort === "smart") return "newest";
       if (prevSort === "newest") return "highest";
       if (prevSort === "highest") return "resonance";
-      return "newest";
+      if (prevSort === "resonance") return "smart";
+      return "smart"; // Default fallback
     });
   }, [setSort]);
 

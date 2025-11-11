@@ -636,14 +636,17 @@ export default function Feed() {
                           <button
                             onClick={() => {
                               const nextSort =
-                                sort === "newest"
+                                sort === "smart"
+                                  ? "newest"
+                                  : sort === "newest"
                                   ? "highest"
                                   : sort === "highest"
                                   ? "resonance"
-                                  : "newest";
+                                  : "smart";
                               toggleSort();
                               setCurrentIndex(0);
                               const sortLabels = {
+                                smart: "For You",
                                 newest: "Newest",
                                 highest: "Uplifting",
                                 resonance: "Resonating",
@@ -660,7 +663,9 @@ export default function Feed() {
                             }}
                             className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-xs sm:text-sm uppercase tracking-[0.2em] text-[#8C8888] hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer active:scale-[0.98] font-medium whitespace-nowrap flex-shrink-0"
                           >
-                            {sort === "newest"
+                            {sort === "smart"
+                              ? "For You"
+                              : sort === "newest"
                               ? "Newest"
                               : sort === "highest"
                               ? "Uplifting"

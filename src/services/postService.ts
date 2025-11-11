@@ -182,7 +182,15 @@ function calculateResonanceScore(
 export async function getPosts(sort: string, userId?: string) {
   let posts;
 
-  if (sort === "resonance") {
+  if (sort === "smart" || sort === "recommended") {
+    // Use smart feed algorithm
+    const { getSmartFeedPosts } = await import("./feedAlgorithmService");
+    console.log(
+      "[Smart Feed] Using intelligent feed algorithm for user:",
+      userId || "anonymous"
+    );
+    return getSmartFeedPosts(userId, 100);
+  } else if (sort === "resonance") {
     // For resonance mode, we need to fetch all posts with comment counts
     posts = await prisma.post.findMany({
       where: { isDeleted: false },
