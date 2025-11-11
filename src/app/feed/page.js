@@ -5,6 +5,7 @@ import { AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { IoMdArrowRoundUp, IoMdArrowRoundDown } from "react-icons/io";
 import { IoMdArrowBack } from "react-icons/io";
+import { IoBookmarkOutline, IoBookmark } from "react-icons/io5";
 import MainView from "../../components/MainView";
 import { useSession } from "next-auth/react";
 import SignIn from "../../components/sign-in";
@@ -18,6 +19,10 @@ import Feedback from "../../components/Feedback";
 import HowToNavigate from "../../components/HowToNavigate";
 import NavigationHint from "../../components/NavigationHint";
 import AnimatedPost from "../../components/AnimatedPost";
+import Activity from "../../components/Activity";
+import CommentSection from "../../components/CommentSection";
+import CommunityIndicators from "../../components/CommunityIndicators";
+import Bookmarks from "../../components/Bookmarks";
 
 //hooks
 //navigation/navigate/up/down/button
@@ -51,6 +56,11 @@ export default function Feed() {
   const [showOwnProfile, setShowOwnProfile] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showHowToNavigate, setShowHowToNavigate] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentPostId, setCommentPostId] = useState(null);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState({});
   const { posts, sort, setSort, votes, setVotes, fetchPosts } = usePosts();
   const { isExpressing, setIsExpressing, handleExpressionSubmission } =
     useExpressionSubmission(fetchPosts);
@@ -79,6 +89,60 @@ export default function Feed() {
   useKeyboardNavigation(currentIndex, setCurrentIndex, posts.length);
 
   useMouseWheelNavigation(currentIndex, setCurrentIndex, posts.length);
+
+  // Check bookmark status for current post
+  useEffect(() => {
+    const checkBookmarkStatus = async () => {
+      if (!session || !posts[currentIndex]?.id) return;
+
+      try {
+        const res = await fetch(
+          `/api/bookmarks?postId=${posts[currentIndex].id}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setBookmarkedPosts((prev) => ({
+            ...prev,
+            [posts[currentIndex].id]: data.bookmarked,
+          }));
+        }
+      } catch (error) {
+        console.error("Error checking bookmark status:", error);
+      }
+    };
+
+    checkBookmarkStatus();
+  }, [session, posts, currentIndex]);
+
+  // Handle bookmark toggle
+  const handleBookmark = async (postId) => {
+    if (!session) {
+      handleInteraction(() => {});
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/bookmarks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setBookmarkedPosts((prev) => ({
+          ...prev,
+          [postId]: data.bookmarked,
+        }));
+        track("bookmark_toggled", {
+          postId,
+          metadata: { bookmarked: data.bookmarked },
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+    }
+  };
 
   // Track sign in and session start
   useEffect(() => {
@@ -269,7 +333,10 @@ export default function Feed() {
           !selectedUserProfile &&
           !showSignIn &&
           !showOwnProfile &&
-          !showFeedback && <NavigationHint />}
+          !showFeedback &&
+          !showActivity &&
+          !showComments &&
+          !showBookmarks && <NavigationHint />}
         <AnimatePresence mode="wait">
           {showSignIn ? (
             <motion.div
@@ -303,6 +370,10 @@ export default function Feed() {
                 <SignIn onSignInSuccess={() => setShowMore(false)} />
               ) : showHowToNavigate ? (
                 <HowToNavigate onBack={() => setShowHowToNavigate(false)} />
+              ) : showActivity ? (
+                <Activity onBack={() => setShowActivity(false)} />
+              ) : showBookmarks ? (
+                <Bookmarks onBack={() => setShowBookmarks(false)} />
               ) : (
                 <div className="flex flex-col h-full w-full">
                   {/* Back arrow at the top left */}
@@ -324,6 +395,22 @@ export default function Feed() {
                       }}
                     >
                       How to Navigate
+                    </button>
+                    <button
+                      className="px-6 py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-[#8C8888] font-medium text-sm uppercase tracking-wider hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer min-w-[200px] active:scale-[0.98]"
+                      onClick={() => {
+                        setShowActivity(true);
+                      }}
+                    >
+                      Activity
+                    </button>
+                    <button
+                      className="px-6 py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-[#8C8888] font-medium text-sm uppercase tracking-wider hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer min-w-[200px] active:scale-[0.98]"
+                      onClick={() => {
+                        setShowBookmarks(true);
+                      }}
+                    >
+                      Bookmarks
                     </button>
                     <button
                       className="px-6 py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-[#8C8888] font-medium text-sm uppercase tracking-wider hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer min-w-[200px] active:scale-[0.98]"
@@ -397,6 +484,23 @@ export default function Feed() {
                 onSubmit={handleFeedbackSubmit}
               />
             </motion.div>
+          ) : showComments ? (
+            <motion.div
+              key="comments"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="w-full h-full flex flex-col overflow-hidden"
+            >
+              <CommentSection
+                postId={commentPostId}
+                onBack={() => {
+                  setShowComments(false);
+                  setCommentPostId(null);
+                }}
+              />
+            </motion.div>
           ) : selectedUserProfile ? (
             <UserProfile
               profile={selectedUserProfile}
@@ -429,6 +533,9 @@ export default function Feed() {
                     }
                   }}
                 >
+                  {/* Community Indicators - shown before post */}
+                  {currentIndex === 0 && <CommunityIndicators />}
+
                   <AnimatedPost
                     content={posts[currentIndex]?.content || "Expressing..."}
                     username={posts[currentIndex]?.user?.username}
@@ -440,71 +547,116 @@ export default function Feed() {
                     isFlagged={flaggedPosts[posts[currentIndex]?.id]}
                     showControls={true}
                     renderButtons={() => (
-                      <div className="flex items-center justify-between gap-2 sm:gap-4 w-full max-w-full overflow-hidden">
-                        <button
-                          onClick={() => {
-                            toggleSort();
-                            setCurrentIndex(0);
-                            track("feed_sort_changed", {
-                              metadata: {
-                                sort: sort === "newest" ? "highest" : "newest",
-                              },
-                            });
-                          }}
-                          className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-xs sm:text-sm uppercase tracking-[0.2em] text-[#8C8888] hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer active:scale-[0.98] font-medium whitespace-nowrap flex-shrink-0"
-                        >
-                          {sort === "newest" ? "Uplifting" : "Newest"}
-                        </button>
-
-                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                      <div className="flex flex-col gap-4 w-full max-w-full">
+                        {/* Top row: Sort and Vote buttons */}
+                        <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
                           <button
                             onClick={() => {
-                              handleInteraction(() => {
-                                handleVote(posts[currentIndex]?.id, 1);
-                                track("vote_cast", {
-                                  postId: posts[currentIndex]?.id,
-                                  metadata: { voteType: 1 },
-                                });
+                              toggleSort();
+                              setCurrentIndex(0);
+                              track("feed_sort_changed", {
+                                metadata: {
+                                  sort:
+                                    sort === "newest" ? "highest" : "newest",
+                                },
                               });
                             }}
-                            className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer active:scale-[0.95] flex-shrink-0 ${
-                              votes[posts[currentIndex]?.id] === 1
-                                ? "bg-[#BEBABA] text-[#4E4A4A] border-[#BEBABA] shadow-sm"
-                                : "text-[#8C8888] border-[#BEBABA]/50 hover:border-[#BEBABA] hover:bg-[#BEBABA]/10"
-                            }`}
+                            className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-xs sm:text-sm uppercase tracking-[0.2em] text-[#8C8888] hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer active:scale-[0.98] font-medium whitespace-nowrap flex-shrink-0"
                           >
-                            <IoMdArrowRoundUp
-                              size={20}
-                              className="sm:w-[22px] sm:h-[22px]"
-                            />
+                            {sort === "newest" ? "Uplifting" : "Newest"}
                           </button>
-                          <button
-                            onClick={() =>
-                              handleInteraction(() =>
-                                handleVote(posts[currentIndex]?.id, -1)
-                              )
-                            }
-                            className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer active:scale-[0.95] flex-shrink-0 ${
-                              votes[posts[currentIndex]?.id] === -1
-                                ? "bg-[#BEBABA] text-[#4E4A4A] border-[#BEBABA] shadow-sm"
-                                : "text-[#8C8888] border-[#BEBABA]/50 hover:border-[#BEBABA] hover:bg-[#BEBABA]/10"
-                            }`}
-                          >
-                            <IoMdArrowRoundDown
-                              size={20}
-                              className="sm:w-[22px] sm:h-[22px]"
-                            />
-                          </button>
+
+                          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                handleInteraction(() => {
+                                  handleVote(posts[currentIndex]?.id, 1);
+                                  track("vote_cast", {
+                                    postId: posts[currentIndex]?.id,
+                                    metadata: { voteType: 1 },
+                                  });
+                                });
+                              }}
+                              className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer active:scale-[0.95] flex-shrink-0 ${
+                                votes[posts[currentIndex]?.id] === 1
+                                  ? "bg-[#BEBABA] text-[#4E4A4A] border-[#BEBABA] shadow-sm"
+                                  : "text-[#8C8888] border-[#BEBABA]/50 hover:border-[#BEBABA] hover:bg-[#BEBABA]/10"
+                              }`}
+                            >
+                              <IoMdArrowRoundUp
+                                size={20}
+                                className="sm:w-[22px] sm:h-[22px]"
+                              />
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleInteraction(() =>
+                                  handleVote(posts[currentIndex]?.id, -1)
+                                )
+                              }
+                              className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer active:scale-[0.95] flex-shrink-0 ${
+                                votes[posts[currentIndex]?.id] === -1
+                                  ? "bg-[#BEBABA] text-[#4E4A4A] border-[#BEBABA] shadow-sm"
+                                  : "text-[#8C8888] border-[#BEBABA]/50 hover:border-[#BEBABA] hover:bg-[#BEBABA]/10"
+                              }`}
+                            >
+                              <IoMdArrowRoundDown
+                                size={20}
+                                className="sm:w-[22px] sm:h-[22px]"
+                              />
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleInteraction(() =>
+                                  handleBookmark(posts[currentIndex]?.id)
+                                )
+                              }
+                              className={`h-12 w-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer active:scale-[0.95] flex-shrink-0 ${
+                                bookmarkedPosts[posts[currentIndex]?.id]
+                                  ? "bg-[#BEBABA] text-[#4E4A4A] border-[#BEBABA] shadow-sm"
+                                  : "text-[#8C8888] border-[#BEBABA]/50 hover:border-[#BEBABA] hover:bg-[#BEBABA]/10"
+                              }`}
+                              title={
+                                bookmarkedPosts[posts[currentIndex]?.id]
+                                  ? "Remove bookmark"
+                                  : "Bookmark this post"
+                              }
+                            >
+                              {bookmarkedPosts[posts[currentIndex]?.id] ? (
+                                <IoBookmark
+                                  size={20}
+                                  className="sm:w-[22px] sm:h-[22px]"
+                                />
+                              ) : (
+                                <IoBookmarkOutline
+                                  size={20}
+                                  className="sm:w-[22px] sm:h-[22px]"
+                                />
+                              )}
+                            </button>
+                          </div>
                         </div>
 
-                        <button
-                          className="px-5 sm:px-7 py-2.5 sm:py-3 rounded-full bg-[#BEBABA] text-[#4E4A4A] text-xs sm:text-sm uppercase tracking-[0.25em] hover:bg-[#BEBABA]/90 hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98] font-medium whitespace-nowrap flex-shrink-0"
-                          onClick={() =>
-                            handleInteraction(() => setIsExpressing(true))
-                          }
-                        >
-                          Express
-                        </button>
+                        {/* Bottom row: Action buttons */}
+                        <div className="flex items-center justify-center gap-2 sm:gap-4 w-full">
+                          <button
+                            className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-xs sm:text-sm uppercase tracking-[0.2em] text-[#8C8888] hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer active:scale-[0.98] font-medium whitespace-nowrap flex-1 sm:flex-initial max-w-[200px]"
+                            onClick={() => {
+                              setCommentPostId(posts[currentIndex]?.id);
+                              setShowComments(true);
+                            }}
+                          >
+                            Reflect
+                          </button>
+                          <button
+                            className="px-5 sm:px-7 py-2.5 sm:py-3 rounded-full bg-[#BEBABA] text-[#4E4A4A] text-xs sm:text-sm uppercase tracking-[0.25em] hover:bg-[#BEBABA]/90 hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98] font-medium whitespace-nowrap flex-1 sm:flex-initial max-w-[200px]"
+                            onClick={() =>
+                              handleInteraction(() => setIsExpressing(true))
+                            }
+                          >
+                            Express
+                          </button>
+                        </div>
                       </div>
                     )}
                   />

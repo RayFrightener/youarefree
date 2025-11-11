@@ -1,6 +1,7 @@
 import { IoMdArrowBack } from "react-icons/io";
 import { IoTrashBinOutline } from "react-icons/io5";
 import { motion, AnimatePresence } from "motion/react";
+import { getEngagementRange, getRangeEmoji } from "@/lib/engagementRanges";
 
 export default function UserProfile({
   profile,
@@ -84,17 +85,16 @@ export default function UserProfile({
                           )}
                         </span>
                         <span className="text-[#BEBABA]">•</span>
-                        <span
-                          className={`font-medium ${
-                            post.score > 0
-                              ? "text-[#4E4A4A]"
-                              : post.score < 0
-                              ? "text-[#8C8888]"
-                              : "text-[#8C8888]"
-                          }`}
-                        >
-                          {post.score > 0 ? `+${post.score}` : post.score}
-                        </span>
+                        {post.score > 0 && (
+                          <span className="text-xs text-[#8C8888] italic">
+                            {getRangeEmoji(post.score)} {getEngagementRange(post.score)}
+                          </span>
+                        )}
+                        {post.score <= 0 && (
+                          <span className="text-xs text-[#BEBABA] italic">
+                            No engagement yet
+                          </span>
+                        )}
                       </div>
 
                       {/* Delete Button */}

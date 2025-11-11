@@ -187,7 +187,7 @@ export default function AnimatedPost({
 
       {/* Buttons - Always rendered to reserve space */}
       {showControls && renderButtons && (
-        <div className="pt-12 pb-6 px-2 sm:px-4 w-full max-w-full overflow-hidden min-h-[100px]">
+        <div className="pt-12 pb-6 px-2 sm:px-4 w-full max-w-full overflow-hidden min-h-[140px] sm:min-h-[160px]">
           {showButtons ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
