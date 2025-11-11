@@ -79,17 +79,33 @@ export async function getUserBookmarks(userId: string) {
     },
   });
 
-  return bookmarks.map((bookmark) => ({
-    id: bookmark.id,
-    postId: bookmark.postId,
-    createdAt: bookmark.createdAt,
-    post: {
-      id: bookmark.post.id,
-      content: bookmark.post.content,
-      score: bookmark.post.score,
-      createdAt: bookmark.post.createdAt,
-      user: bookmark.post.user,
-    },
-  }));
+  return bookmarks.map(
+    (bookmark: {
+      id: number;
+      postId: number;
+      createdAt: Date;
+      post: {
+        id: number;
+        content: string;
+        score: number;
+        createdAt: Date;
+        user: {
+          username: string | null;
+          name: string | null;
+        };
+      };
+    }) => ({
+      id: bookmark.id,
+      postId: bookmark.postId,
+      createdAt: bookmark.createdAt,
+      post: {
+        id: bookmark.post.id,
+        content: bookmark.post.content,
+        score: bookmark.post.score,
+        createdAt: bookmark.post.createdAt,
+        user: bookmark.post.user,
+      },
+    })
+  );
 }
 

@@ -28,8 +28,8 @@ export async function getTodayReflectionsCount(): Promise<number> {
   });
 
   const uniqueUsers = new Set([
-    ...todayPosts.map((p) => p.userId),
-    ...todayComments.map((c) => c.userId),
+    ...todayPosts.map((p: { userId: string }) => p.userId),
+    ...todayComments.map((c: { userId: string }) => c.userId),
   ]);
 
   return uniqueUsers.size;

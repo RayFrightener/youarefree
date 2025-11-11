@@ -27,8 +27,15 @@ export async function getUserActivity(userId: string): Promise<ActivityItem[]> {
     },
   });
 
-  const postIds = userPosts.map((post) => post.id);
-  const postMap = new Map(userPosts.map((post) => [post.id, post.content]));
+  const postIds = userPosts.map(
+    (post: { id: number; content: string }) => post.id
+  );
+  const postMap = new Map(
+    userPosts.map((post: { id: number; content: string }) => [
+      post.id,
+      post.content,
+    ])
+  );
 
   if (postIds.length === 0) {
     return [];
@@ -55,15 +62,22 @@ export async function getUserActivity(userId: string): Promise<ActivityItem[]> {
   });
 
   // Transform votes into activity items
-  const activityItems: ActivityItem[] = votes.map((vote) => ({
-    id: `vote-${vote.id}`,
-    type: "vote" as const,
-    postId: vote.postId,
-    postContent: postMap.get(vote.postId) || "",
-    userId: vote.user.id,
-    username: vote.user.username,
-    createdAt: vote.createdAt,
-  }));
+  const activityItems: ActivityItem[] = votes.map(
+    (vote: {
+      id: number;
+      postId: number;
+      createdAt: Date;
+      user: { id: string; username: string | null };
+    }) => ({
+      id: `vote-${vote.id}`,
+      type: "vote" as const,
+      postId: vote.postId,
+      postContent: postMap.get(vote.postId) || "",
+      userId: vote.user.id,
+      username: vote.user.username,
+      createdAt: vote.createdAt,
+    })
+  );
 
   // Sort by most recent
   return activityItems.sort(
@@ -88,7 +102,7 @@ export async function getActivitySummary(userId: string): Promise<{
     },
   });
 
-  const postIds = userPosts.map((post) => post.id);
+  const postIds = userPosts.map((post: { id: number }) => post.id);
 
   if (postIds.length === 0) {
     return { totalInteractions: 0, recentInteractions: 0 };
@@ -112,4 +126,3 @@ export async function getActivitySummary(userId: string): Promise<{
 
   return { totalInteractions, recentInteractions };
 }
-

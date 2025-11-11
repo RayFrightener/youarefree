@@ -44,30 +44,49 @@ export async function getPostComments(
 
   // Build a map of comments by ID for quick lookup
   const commentMap = new Map<number, CommentWithReplies>();
-  allComments.forEach((comment) => {
-    commentMap.set(comment.id, {
-      ...comment,
-      replies: [],
-    } as CommentWithReplies);
-  });
+  allComments.forEach(
+    (comment: {
+      id: number;
+      content: string;
+      userId: string;
+      postId: number;
+      parentId: number | null;
+      createdAt: Date;
+      updatedAt: Date;
+      user: {
+        username: string | null;
+        name: string | null;
+      };
+    }) => {
+      commentMap.set(comment.id, {
+        ...comment,
+        replies: [],
+      } as CommentWithReplies);
+    }
+  );
 
   // Build the tree structure
   const rootComments: CommentWithReplies[] = [];
-  
-  allComments.forEach((comment) => {
-    const commentWithReplies = commentMap.get(comment.id)!;
-    
-    if (comment.parentId === null) {
-      // This is a root-level comment
-      rootComments.push(commentWithReplies);
-    } else {
-      // This is a reply - add it to its parent's replies array
-      const parent = commentMap.get(comment.parentId);
-      if (parent) {
-        parent.replies.push(commentWithReplies);
+
+  allComments.forEach(
+    (comment: {
+      id: number;
+      parentId: number | null;
+    }) => {
+      const commentWithReplies = commentMap.get(comment.id)!;
+
+      if (comment.parentId === null) {
+        // This is a root-level comment
+        rootComments.push(commentWithReplies);
+      } else {
+        // This is a reply - add it to its parent's replies array
+        const parent = commentMap.get(comment.parentId);
+        if (parent) {
+          parent.replies.push(commentWithReplies);
+        }
       }
     }
-  });
+  );
 
   return rootComments;
 }
