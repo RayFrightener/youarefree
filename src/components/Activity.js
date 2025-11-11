@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { IoMdArrowBack } from "react-icons/io";
 
-export default function Activity({ onBack }) {
+export default function Activity({ onBack, onNavigateToPost }) {
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
@@ -43,6 +43,9 @@ export default function Activity({ onBack }) {
   const getInteractionText = (item) => {
     if (item.type === "vote") {
       return "found value in";
+    }
+    if (item.type === "comment") {
+      return "reflected on";
     }
     return "engaged with";
   };
@@ -127,7 +130,10 @@ export default function Activity({ onBack }) {
                   exit={{ opacity: 0, y: -10 }}
                   className="border-b border-[#BEBABA]/30 pb-4 last:border-0"
                 >
-                  <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => onNavigateToPost && onNavigateToPost(item.postId)}
+                    className="w-full text-left flex flex-col gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+                  >
                     <div className="text-sm text-[#4E4A4A]">
                       <span className="font-medium">
                         {item.username || "Someone"}
@@ -139,10 +145,15 @@ export default function Activity({ onBack }) {
                     <div className="text-xs text-[#8C8888] italic line-clamp-2">
                       &quot;{item.postContent}&quot;
                     </div>
+                    {item.type === "comment" && item.commentContent && (
+                      <div className="text-xs text-[#BEBABA] italic line-clamp-2 pl-2 border-l-2 border-[#BEBABA]/20">
+                        &quot;{item.commentContent}&quot;
+                      </div>
+                    )}
                     <div className="text-xs text-[#BEBABA]">
                       {formatTimeAgo(item.createdAt)}
                     </div>
-                  </div>
+                  </button>
                 </motion.div>
               ))}
             </div>

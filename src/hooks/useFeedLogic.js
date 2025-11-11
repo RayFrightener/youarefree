@@ -427,10 +427,14 @@ export function useUserProfileClick(setSelectedUserProfile) {
 
 export function useToggleSort(setSort) {
   /**
-   * Toggles the sort state between "newest" and "highest".
+   * Toggles the sort state: newest -> highest -> resonance -> newest
    */
   const toggleSort = useCallback(() => {
-    setSort((prevSort) => (prevSort === "newest" ? "highest" : "newest"));
+    setSort((prevSort) => {
+      if (prevSort === "newest") return "highest";
+      if (prevSort === "highest") return "resonance";
+      return "newest";
+    });
   }, [setSort]);
 
   return { toggleSort };

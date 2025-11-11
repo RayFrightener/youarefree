@@ -146,31 +146,120 @@ async function isUserRestricted(userId: string): Promise<{
   return { restricted: false };
 }
 
+/**
+ * Calculate resonance score for a post
+ * Resonance = sustained engagement over time, not just viral spikes
+ */
+function calculateResonanceScore(
+  post: {
+    score: number;
+    createdAt: Date;
+    _count?: { comments?: number; votes?: number };
+  },
+  commentCount: number
+): number {
+  const now = new Date();
+  const postAgeHours =
+    (now.getTime() - post.createdAt.getTime()) / (1000 * 60 * 60);
+
+  // Total engagement (votes + comments weighted higher)
+  const totalEngagement = post.score + commentCount * 2;
+
+  // Time decay - recent engagement weighted higher, but older posts still count
+  const timeDecay = 1 / (postAgeHours + 1);
+
+  // Days with activity (simplified: if post is older than 1 day and has engagement)
+  const daysWithActivity = postAgeHours > 24 && totalEngagement > 0 ? 1 : 0;
+
+  // Resonance formula: (engagement × time_decay) / (age + 1) × (1 + sustained_activity)
+  const resonanceScore =
+    ((totalEngagement * timeDecay) / (postAgeHours + 1)) *
+    (1 + daysWithActivity);
+
+  return resonanceScore;
+}
+
 export async function getPosts(sort: string, userId?: string) {
-  const posts = await prisma.post.findMany({
-    where: { isDeleted: false },
-    orderBy: sort === "highest" ? { score: "desc" } : { createdAt: "desc" },
-    include: {
-      user: {
-        select: {
-          username: true,
-          name: true,
+  let posts;
+
+  if (sort === "resonance") {
+    // For resonance mode, we need to fetch all posts with comment counts
+    posts = await prisma.post.findMany({
+      where: { isDeleted: false },
+      include: {
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
+        votes: userId
+          ? {
+              where: { userId },
+              select: { voteType: true },
+            }
+          : false,
+        _count: {
+          select: {
+            comments: {
+              where: { isDeleted: false },
+            },
+            votes: true,
+          },
         },
       },
-      votes: userId
-        ? {
-            where: { userId },
-            select: { voteType: true },
-          }
-        : false,
-    },
-  });
+    });
+
+    // Calculate resonance scores and sort
+    const postsWithResonance = await Promise.all(
+      posts.map(
+        async (post: {
+          score: number;
+          createdAt: Date;
+          _count?: { comments?: number; votes?: number };
+          [key: string]: unknown;
+        }) => {
+          const commentCount = post._count?.comments || 0;
+          const resonanceScore = calculateResonanceScore(post, commentCount);
+          return {
+            ...post,
+            resonanceScore,
+          };
+        }
+      )
+    );
+
+    // Sort by resonance score
+    postsWithResonance.sort((a, b) => b.resonanceScore - a.resonanceScore);
+    posts = postsWithResonance;
+  } else {
+    // Standard sorting (highest or newest)
+    posts = await prisma.post.findMany({
+      where: { isDeleted: false },
+      orderBy: sort === "highest" ? { score: "desc" } : { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            username: true,
+            name: true,
+          },
+        },
+        votes: userId
+          ? {
+              where: { userId },
+              select: { voteType: true },
+            }
+          : false,
+      },
+    });
+  }
 
   return posts.map(
     (post: { votes?: { voteType: number }[]; [key: string]: unknown }) => ({
       ...post,
       currentUserVote: post.votes?.[0]?.voteType ?? 0,
       votes: undefined, // Remove raw votes array from response
+      resonanceScore: undefined, // Remove resonance score from response
     })
   );
 }

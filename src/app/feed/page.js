@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { AnimatePresence } from "motion/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { IoMdArrowRoundUp, IoMdArrowRoundDown } from "react-icons/io";
 import { IoMdArrowBack } from "react-icons/io";
 import { IoBookmarkOutline, IoBookmark } from "react-icons/io5";
@@ -23,6 +23,7 @@ import Activity from "../../components/Activity";
 import CommentSection from "../../components/CommentSection";
 import CommunityIndicators from "../../components/CommunityIndicators";
 import Bookmarks from "../../components/Bookmarks";
+import QuietMoment from "../../components/QuietMoment";
 
 //hooks
 //navigation/navigate/up/down/button
@@ -61,6 +62,10 @@ export default function Feed() {
   const [commentPostId, setCommentPostId] = useState(null);
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [bookmarkedPosts, setBookmarkedPosts] = useState({});
+  const [focusMode, setFocusMode] = useState(false);
+  const postsViewedInSessionRef = useRef(0);
+  const [showQuietMoment, setShowQuietMoment] = useState(false);
+  const [focusModeStartTime, setFocusModeStartTime] = useState(null);
   const { posts, sort, setSort, votes, setVotes, fetchPosts } = usePosts();
   const { isExpressing, setIsExpressing, handleExpressionSubmission } =
     useExpressionSubmission(fetchPosts);
@@ -89,6 +94,82 @@ export default function Feed() {
   useKeyboardNavigation(currentIndex, setCurrentIndex, posts.length);
 
   useMouseWheelNavigation(currentIndex, setCurrentIndex, posts.length);
+
+  // Track posts viewed for quiet moments
+  useEffect(() => {
+    if (posts.length > 0 && currentIndex >= 0) {
+      const newCount = Math.max(
+        postsViewedInSessionRef.current,
+        currentIndex + 1
+      );
+      postsViewedInSessionRef.current = newCount;
+      // Show quiet moment after 5-7 posts
+      if (newCount >= 5 && newCount <= 7 && !showQuietMoment) {
+        setShowQuietMoment(true);
+        track("quiet_moment_shown", {
+          metadata: { postsViewed: newCount },
+        });
+      }
+    }
+  }, [currentIndex, posts.length, showQuietMoment]);
+
+  // Track focus mode duration
+  useEffect(() => {
+    if (focusMode && !focusModeStartTime) {
+      setFocusModeStartTime(Date.now());
+      track("focus_mode_enabled");
+    } else if (!focusMode && focusModeStartTime) {
+      const duration = Math.floor((Date.now() - focusModeStartTime) / 1000);
+      track("focus_mode_disabled", {
+        metadata: { duration },
+      });
+      track("focus_mode_duration", {
+        metadata: { durationSeconds: duration },
+      });
+      setFocusModeStartTime(null);
+    }
+  }, [focusMode, focusModeStartTime]);
+
+  // Keyboard shortcut for focus mode (F key)
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.key === "f" || e.key === "F") {
+        if (
+          !showMore &&
+          !isExpressing &&
+          !selectedUserProfile &&
+          !showSignIn &&
+          !showOwnProfile &&
+          !showFeedback &&
+          !showActivity &&
+          !showComments &&
+          !showBookmarks
+        ) {
+          setFocusMode((prev) => !prev);
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [
+    showMore,
+    isExpressing,
+    selectedUserProfile,
+    showSignIn,
+    showOwnProfile,
+    showFeedback,
+    showActivity,
+    showComments,
+    showBookmarks,
+  ]);
+
+  // Calculate reading time (words / 200 words per minute)
+  const calculateReadingTime = (content) => {
+    if (!content) return 0;
+    const words = content.trim().split(/\s+/).length;
+    const minutes = Math.ceil(words / 200); // Average reading speed: 200 words/min
+    return minutes;
+  };
 
   // Check bookmark status for current post
   useEffect(() => {
@@ -371,7 +452,18 @@ export default function Feed() {
               ) : showHowToNavigate ? (
                 <HowToNavigate onBack={() => setShowHowToNavigate(false)} />
               ) : showActivity ? (
-                <Activity onBack={() => setShowActivity(false)} />
+                <Activity
+                  onBack={() => setShowActivity(false)}
+                  onNavigateToPost={(postId) => {
+                    // Find the post index and navigate to it
+                    const postIndex = posts.findIndex((p) => p.id === postId);
+                    if (postIndex !== -1) {
+                      setCurrentIndex(postIndex);
+                      setShowActivity(false);
+                      setShowMore(false);
+                    }
+                  }}
+                />
               ) : showBookmarks ? (
                 <Bookmarks onBack={() => setShowBookmarks(false)} />
               ) : (
@@ -411,6 +503,19 @@ export default function Feed() {
                       }}
                     >
                       Bookmarks
+                    </button>
+                    <button
+                      className={`px-6 py-3 rounded-full border-2 font-medium text-sm uppercase tracking-wider transition-all duration-300 cursor-pointer min-w-[200px] active:scale-[0.98] ${
+                        focusMode
+                          ? "bg-[#BEBABA] text-[#4E4A4A] border-[#BEBABA]"
+                          : "border-[#BEBABA]/50 bg-transparent text-[#8C8888] hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A]"
+                      }`}
+                      onClick={() => {
+                        setFocusMode((prev) => !prev);
+                        setShowMore(false);
+                      }}
+                    >
+                      {focusMode ? "Exit Focus" : "Focus Mode"}
                     </button>
                     <button
                       className="px-6 py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-[#8C8888] font-medium text-sm uppercase tracking-wider hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer min-w-[200px] active:scale-[0.98]"
@@ -534,7 +639,7 @@ export default function Feed() {
                   }}
                 >
                   {/* Community Indicators - shown before post */}
-                  {currentIndex === 0 && <CommunityIndicators />}
+                  {currentIndex === 0 && !focusMode && <CommunityIndicators />}
 
                   <AnimatedPost
                     content={posts[currentIndex]?.content || "Expressing..."}
@@ -545,25 +650,63 @@ export default function Feed() {
                     }
                     onFlagClick={() => handleFlagPosts(posts[currentIndex]?.id)}
                     isFlagged={flaggedPosts[posts[currentIndex]?.id]}
-                    showControls={true}
+                    showControls={!focusMode}
+                    readingTime={calculateReadingTime(
+                      posts[currentIndex]?.content
+                    )}
+                    onPostView={() => {
+                      if (sort === "resonance" && posts[currentIndex]?.id) {
+                        track("resonance_post_viewed", {
+                          postId: posts[currentIndex].id,
+                        });
+                      }
+                      // Track actual reading time when post is fully viewed
+                      const readingTime = calculateReadingTime(
+                        posts[currentIndex]?.content
+                      );
+                      if (readingTime > 0 && posts[currentIndex]?.id) {
+                        track("post_reading_time_actual", {
+                          postId: posts[currentIndex].id,
+                          metadata: { estimatedMinutes: readingTime },
+                        });
+                      }
+                    }}
                     renderButtons={() => (
                       <div className="flex flex-col gap-4 w-full max-w-full">
                         {/* Top row: Sort and Vote buttons */}
                         <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
                           <button
                             onClick={() => {
+                              const nextSort =
+                                sort === "newest"
+                                  ? "highest"
+                                  : sort === "highest"
+                                  ? "resonance"
+                                  : "newest";
                               toggleSort();
                               setCurrentIndex(0);
+                              const sortLabels = {
+                                newest: "Newest",
+                                highest: "Uplifting",
+                                resonance: "Resonating",
+                              };
                               track("feed_sort_changed", {
                                 metadata: {
-                                  sort:
-                                    sort === "newest" ? "highest" : "newest",
+                                  sort: nextSort,
+                                  sortLabel: sortLabels[nextSort],
                                 },
                               });
+                              if (nextSort === "resonance") {
+                                track("resonance_mode_selected");
+                              }
                             }}
                             className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-full border-2 border-[#BEBABA]/50 bg-transparent text-xs sm:text-sm uppercase tracking-[0.2em] text-[#8C8888] hover:border-[#BEBABA] hover:bg-[#BEBABA]/10 hover:text-[#4E4A4A] transition-all duration-300 cursor-pointer active:scale-[0.98] font-medium whitespace-nowrap flex-shrink-0"
                           >
-                            {sort === "newest" ? "Uplifting" : "Newest"}
+                            {sort === "newest"
+                              ? "Newest"
+                              : sort === "highest"
+                              ? "Uplifting"
+                              : "Resonating"}
                           </button>
 
                           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -665,6 +808,42 @@ export default function Feed() {
             </AnimatePresence>
           )}
         </AnimatePresence>
+
+        {/* Quiet Moment Modal */}
+        <AnimatePresence>
+          {showQuietMoment && (
+            <QuietMoment
+              onContinue={() => {
+                setShowQuietMoment(false);
+              }}
+              onBookmark={() => {
+                if (posts[currentIndex]?.id) {
+                  handleBookmark(posts[currentIndex].id);
+                }
+              }}
+              currentPostId={posts[currentIndex]?.id}
+              currentPostContent={posts[currentIndex]?.content}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Focus Mode Indicator */}
+        {focusMode && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed top-4 right-4 z-40 bg-[#ECE9E9]/90 backdrop-blur-sm border border-[#BEBABA]/50 rounded-full px-4 py-2 text-xs text-[#8C8888] flex items-center gap-2"
+          >
+            <span>Focus Mode</span>
+            <button
+              onClick={() => setFocusMode(false)}
+              className="text-[#4E4A4A] hover:text-[#8C8888] transition-colors"
+              title="Press F to toggle"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
       </MainView>
     </div>
   );

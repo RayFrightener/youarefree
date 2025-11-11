@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { useTextReveal } from "../hooks/useTextReveal";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { IoFlagOutline } from "react-icons/io5";
 
 interface AnimatedPostProps {
@@ -15,6 +15,8 @@ interface AnimatedPostProps {
   showControls: boolean;
   onControlsReady?: () => void;
   renderButtons?: () => React.ReactNode;
+  readingTime?: number;
+  onPostView?: () => void;
 }
 
 export default function AnimatedPost({
@@ -27,9 +29,12 @@ export default function AnimatedPost({
   showControls,
   onControlsReady,
   renderButtons,
+  readingTime,
+  onPostView,
 }: AnimatedPostProps) {
   const [showUsername, setShowUsername] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
+  const hasTrackedView = useRef(false);
   // Skip button implementation - commented out
   // const [showSkipButton, setShowSkipButton] = useState(false);
   // const skipButtonTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -52,10 +57,19 @@ export default function AnimatedPost({
     },
   });
 
+  // Track post view when content is fully revealed (only once per post)
+  useEffect(() => {
+    if (showButtons && onPostView && !hasTrackedView.current) {
+      onPostView();
+      hasTrackedView.current = true;
+    }
+  }, [showButtons, onPostView]);
+
   // Reset everything when content changes
   useEffect(() => {
     setShowUsername(false);
     setShowButtons(false);
+    hasTrackedView.current = false;
     // Skip button implementation - commented out
     // setShowSkipButton(false);
     // hasShownSkipRef.current = false;
@@ -145,8 +159,8 @@ export default function AnimatedPost({
             </div>
           </h2>
 
-          {/* Username and Flag - Always rendered to reserve space */}
-          <div className="text-sm text-[#8C8888] flex items-center justify-center gap-3 mt-8 min-h-[28px]">
+          {/* Username, Reading Time, and Flag - Always rendered to reserve space */}
+          <div className="text-sm text-[#8C8888] flex items-center justify-center gap-3 mt-8 min-h-[28px] flex-wrap">
             {showUsername && username ? (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -161,6 +175,14 @@ export default function AnimatedPost({
                 >
                   {username}
                 </button>
+                {readingTime && readingTime > 0 && (
+                  <>
+                    <span className="text-[#BEBABA]">•</span>
+                    <span className="text-xs italic">
+                      ~{readingTime} {readingTime === 1 ? "min" : "mins"} read
+                    </span>
+                  </>
+                )}
                 {onFlagClick && (
                   <button
                     className={`cursor-pointer transition-opacity ${

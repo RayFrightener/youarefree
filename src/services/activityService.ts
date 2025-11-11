@@ -2,17 +2,18 @@ import { prisma } from "@/lib/prisma";
 
 export interface ActivityItem {
   id: string;
-  type: "vote" | "comment"; // Will add "comment" when comments are implemented
+  type: "vote" | "comment";
   postId: number;
   postContent: string;
   userId: string;
   username: string | null;
   createdAt: Date;
+  commentContent?: string; // For comment type activities
 }
 
 /**
  * Get activity for a user - shows who interacted with their posts
- * Returns votes on user's posts (comments will be added later)
+ * Returns votes and comments on user's posts
  */
 export async function getUserActivity(userId: string): Promise<ActivityItem[]> {
   // Get all posts by this user
@@ -41,28 +42,49 @@ export async function getUserActivity(userId: string): Promise<ActivityItem[]> {
     return [];
   }
 
-  // Get all votes on user's posts (excluding the user's own votes)
-  const votes = await prisma.vote.findMany({
-    where: {
-      postId: { in: postIds },
-      userId: { not: userId }, // Exclude user's own votes
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          username: true,
+  // Get all votes and comments on user's posts (excluding the user's own interactions)
+  const [votes, comments] = await Promise.all([
+    prisma.vote.findMany({
+      where: {
+        postId: { in: postIds },
+        userId: { not: userId }, // Exclude user's own votes
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+          },
         },
       },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: 50, // Limit to recent 50 interactions
-  });
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50, // Limit to recent 50 interactions
+    }),
+    prisma.comment.findMany({
+      where: {
+        postId: { in: postIds },
+        userId: { not: userId }, // Exclude user's own comments
+        isDeleted: false,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50, // Limit to recent 50 interactions
+    }),
+  ]);
 
   // Transform votes into activity items
-  const activityItems: ActivityItem[] = votes.map(
+  const voteActivities: ActivityItem[] = votes.map(
     (vote: {
       id: number;
       postId: number;
@@ -79,8 +101,29 @@ export async function getUserActivity(userId: string): Promise<ActivityItem[]> {
     })
   );
 
-  // Sort by most recent
-  return activityItems.sort(
+  // Transform comments into activity items
+  const commentActivities: ActivityItem[] = comments.map(
+    (comment: {
+      id: number;
+      postId: number;
+      content: string;
+      createdAt: Date;
+      user: { id: string; username: string | null };
+    }) => ({
+      id: `comment-${comment.id}`,
+      type: "comment" as const,
+      postId: comment.postId,
+      postContent: postMap.get(comment.postId) || "",
+      userId: comment.user.id,
+      username: comment.user.username,
+      createdAt: comment.createdAt,
+      commentContent: comment.content,
+    })
+  );
+
+  // Combine and sort by most recent
+  const allActivities = [...voteActivities, ...commentActivities];
+  return allActivities.sort(
     (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
   );
 }
@@ -108,21 +151,45 @@ export async function getActivitySummary(userId: string): Promise<{
     return { totalInteractions: 0, recentInteractions: 0 };
   }
 
-  const totalInteractions = await prisma.vote.count({
-    where: {
-      postId: { in: postIds },
-      userId: { not: userId },
-    },
-  });
+  // Count both votes and comments
+  const [totalVotes, totalComments] = await Promise.all([
+    prisma.vote.count({
+      where: {
+        postId: { in: postIds },
+        userId: { not: userId },
+      },
+    }),
+    prisma.comment.count({
+      where: {
+        postId: { in: postIds },
+        userId: { not: userId },
+        isDeleted: false,
+      },
+    }),
+  ]);
+
+  const totalInteractions = totalVotes + totalComments;
 
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const recentInteractions = await prisma.vote.count({
-    where: {
-      postId: { in: postIds },
-      userId: { not: userId },
-      createdAt: { gte: oneDayAgo },
-    },
-  });
+  const [recentVotes, recentComments] = await Promise.all([
+    prisma.vote.count({
+      where: {
+        postId: { in: postIds },
+        userId: { not: userId },
+        createdAt: { gte: oneDayAgo },
+      },
+    }),
+    prisma.comment.count({
+      where: {
+        postId: { in: postIds },
+        userId: { not: userId },
+        isDeleted: false,
+        createdAt: { gte: oneDayAgo },
+      },
+    }),
+  ]);
+
+  const recentInteractions = recentVotes + recentComments;
 
   return { totalInteractions, recentInteractions };
 }

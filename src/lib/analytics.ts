@@ -13,7 +13,18 @@ type EventType =
   | "sign_in"
   | "sign_out"
   | "feed_sort_changed"
-  | "navigation_hint_dismissed";
+  | "navigation_hint_dismissed"
+  | "resonance_mode_selected"
+  | "resonance_post_viewed"
+  | "quiet_moment_shown"
+  | "quiet_moment_engaged"
+  | "quiet_moment_bookmarked"
+  | "focus_mode_enabled"
+  | "focus_mode_disabled"
+  | "focus_mode_duration"
+  | "reading_time_displayed"
+  | "post_reading_time_actual"
+  | "bookmark_toggled";
 
 interface TrackEventOptions {
   postId?: number;
