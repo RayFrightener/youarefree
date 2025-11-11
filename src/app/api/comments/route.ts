@@ -79,12 +79,11 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json(comment, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating comment:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to create comment" },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to create comment";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 

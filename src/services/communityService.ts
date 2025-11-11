@@ -7,21 +7,6 @@ export async function getTodayReflectionsCount(): Promise<number> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [postCount, commentCount] = await Promise.all([
-    prisma.post.count({
-      where: {
-        createdAt: { gte: today },
-        isDeleted: false,
-      },
-    }),
-    prisma.comment.count({
-      where: {
-        createdAt: { gte: today },
-        isDeleted: false,
-      },
-    }),
-  ]);
-
   // Count unique users who posted or commented today
   const todayPosts = await prisma.post.findMany({
     where: {

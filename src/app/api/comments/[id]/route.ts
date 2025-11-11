@@ -29,12 +29,11 @@ export async function DELETE(
 
     await deleteComment(commentId, user.id);
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error deleting comment:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to delete comment" },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to delete comment";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
