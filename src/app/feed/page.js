@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { AnimatePresence } from "motion/react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { IoMdArrowRoundUp, IoMdArrowRoundDown } from "react-icons/io";
 import { IoMdArrowBack } from "react-icons/io";
 import { IoBookmarkOutline, IoBookmark } from "react-icons/io5";
@@ -23,7 +23,6 @@ import Activity from "../../components/Activity";
 import CommentSection from "../../components/CommentSection";
 import CommunityIndicators from "../../components/CommunityIndicators";
 import Bookmarks from "../../components/Bookmarks";
-import QuietMoment from "../../components/QuietMoment";
 
 //hooks
 //navigation/navigate/up/down/button
@@ -63,8 +62,6 @@ export default function Feed() {
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [bookmarkedPosts, setBookmarkedPosts] = useState({});
   const [focusMode, setFocusMode] = useState(false);
-  const postsViewedInSessionRef = useRef(0);
-  const [showQuietMoment, setShowQuietMoment] = useState(false);
   const [focusModeStartTime, setFocusModeStartTime] = useState(null);
   const { posts, sort, setSort, votes, setVotes, fetchPosts } = usePosts();
   const { isExpressing, setIsExpressing, handleExpressionSubmission } =
@@ -94,24 +91,6 @@ export default function Feed() {
   useKeyboardNavigation(currentIndex, setCurrentIndex, posts.length);
 
   useMouseWheelNavigation(currentIndex, setCurrentIndex, posts.length);
-
-  // Track posts viewed for quiet moments
-  useEffect(() => {
-    if (posts.length > 0 && currentIndex >= 0) {
-      const newCount = Math.max(
-        postsViewedInSessionRef.current,
-        currentIndex + 1
-      );
-      postsViewedInSessionRef.current = newCount;
-      // Show quiet moment after 5-7 posts
-      if (newCount >= 5 && newCount <= 7 && !showQuietMoment) {
-        setShowQuietMoment(true);
-        track("quiet_moment_shown", {
-          metadata: { postsViewed: newCount },
-        });
-      }
-    }
-  }, [currentIndex, posts.length, showQuietMoment]);
 
   // Track focus mode duration
   useEffect(() => {
@@ -806,24 +785,6 @@ export default function Feed() {
                 </motion.div>
               </motion.div>
             </AnimatePresence>
-          )}
-        </AnimatePresence>
-
-        {/* Quiet Moment Modal */}
-        <AnimatePresence>
-          {showQuietMoment && (
-            <QuietMoment
-              onContinue={() => {
-                setShowQuietMoment(false);
-              }}
-              onBookmark={() => {
-                if (posts[currentIndex]?.id) {
-                  handleBookmark(posts[currentIndex].id);
-                }
-              }}
-              currentPostId={posts[currentIndex]?.id}
-              currentPostContent={posts[currentIndex]?.content}
-            />
           )}
         </AnimatePresence>
 
